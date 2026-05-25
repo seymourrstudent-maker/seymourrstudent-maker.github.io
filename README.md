@@ -1,5 +1,5 @@
-# RomanNoodlw.github.io
-## Hello Viewer!
+# Hello Viewer
+## Welcome to my personal github.io
 
 This website is intended to serve as a personal portfolio and professional overview. The information presented here is tailored to provide viewers with a relevant overview of my background, experience, projects, and areas of interest.
 
