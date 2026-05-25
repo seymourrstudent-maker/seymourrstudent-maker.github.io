@@ -1,6 +1,8 @@
 # RomanNoodlw.github.io
 ## Disclaimer
 
+** Hello Viewer! **
+
 This website is intended to serve as a personal portfolio and professional overview. The information presented here is tailored to provide viewers with a relevant overview of my background, experience, projects, and areas of interest.
 
 I make an effort to keep the information accurate and up to date, so some details may change over time.
