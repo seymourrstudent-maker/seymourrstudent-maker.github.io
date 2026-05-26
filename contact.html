@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact | Rapheal Seymour</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--accent:#5bf5c2;--accent2:#7c6dfa;--accent3:#f5a05b;--text:#e8eaf0;--muted:#6b7280;--nav-h:64px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");background-size:200px 200px;pointer-events:none;z-index:9999;opacity:0.4}
+    nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(13,15,20,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;z-index:100}
+    .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);text-decoration:none;letter-spacing:-0.02em}
+    .nav-links{display:flex;gap:0.25rem;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}
+    .nav-dropdown{position:relative}
+    .nav-dropdown>span{color:var(--muted);font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;cursor:pointer;transition:color 0.2s,background 0.2s;display:flex;align-items:center;gap:0.3rem}
+    .nav-dropdown:hover>span{color:var(--text);background:var(--surface2)}
+    .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem;min-width:140px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 0.2s,transform 0.2s}
+    .nav-dropdown:hover .dropdown-menu{opacity:1;pointer-events:all;transform:translateY(0)}
+    .dropdown-menu a{display:block;color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;padding:0.45rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .dropdown-menu a:hover{color:var(--text);background:var(--surface2)}
+    .page-header{padding:calc(var(--nav-h) + 4rem) 2rem 3rem;max-width:1100px;margin:0 auto}
+    .eyebrow{font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
+    .eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--accent)}
+    .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.5rem,6vw,4.5rem);letter-spacing:-0.03em;line-height:1}
+    .page-title em{font-style:normal;color:var(--accent)}
+    .page-sub{font-family:'Fraunces',serif;font-style:italic;color:var(--muted);font-size:1.1rem;margin-top:1rem;max-width:520px;line-height:1.6}
+    section{max-width:700px;margin:0 auto;padding:3rem 2rem}
+    hr.divider{border:none;border-top:1px solid var(--border);margin:0 2rem}
+
+    .contact-options{display:flex;flex-direction:column;gap:1.25rem;margin-bottom:3rem}
+    .contact-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:border-color 0.2s,transform 0.2s;text-decoration:none}
+    .contact-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+    .contact-card-left{display:flex;align-items:center;gap:1.25rem}
+    .contact-icon{font-size:1.5rem;width:48px;height:48px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .contact-label{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
+    .contact-value{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text)}
+    .contact-arrow{color:var(--accent);font-size:1.2rem}
+
+    .note{font-size:0.78rem;color:var(--muted);line-height:1.7;text-align:center;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+    .note strong{color:var(--text);font-weight:500}
+
+    .footer-inner{max-width:1100px;margin:4rem auto 0;padding:2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+    .footer-left .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent)}
+    .footer-left .copy{color:var(--muted);font-size:0.7rem;margin-top:0.25rem}
+    .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+    .footer-links a{color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;transition:color 0.2s}
+    .footer-links a:hover{color:var(--accent)}
+    @media(max-width:768px){.nav-links{display:none}.contact-card{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="index.html">Rapheal Seymour</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="experience.html">Experience</a></li>
+      <li><a href="college.html">College</a></li>
+      <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="work.html">Overview</a><a href="work-broadcast.html">Broadcast</a><a href="work-projects.html">Projects</a></div></div></li>
+      <li><a href="activities.html">Activities</a></li>
+      <li><a href="contact.html" class="active">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-header">
+    <p class="eyebrow">Get In Touch</p>
+    <h1 class="page-title">Let's<br /><em>connect</em></h1>
+    <p class="page-sub">Whether it's about a project, an opportunity, or just to say hey — my inbox is open.</p>
+  </div>
+
+  <hr class="divider" />
+
+  <section>
+    <div class="contact-options">
+
+      <a class="contact-card" href="mailto:seymourr.student@gmail.com">
+        <div class="contact-card-left">
+          <div class="contact-icon">✉️</div>
+          <div>
+            <div class="contact-label">Email</div>
+            <div class="contact-value">seymourr.student@gmail.com</div>
+          </div>
+        </div>
+        <div class="contact-arrow">→</div>
+      </a>
+
+    </div>
+
+    <div class="note">
+      <strong>Note:</strong> I'm currently a student at Missouri S&T with an expected graduation of May 2027. I'm open to internships, part-time opportunities, and conversations about broadcast, engineering, or AI.
+    </div>
+  </section>
+
+  <div class="footer-inner">
+    <div class="footer-left"><div class="logo">Rapheal Seymour</div><div class="copy">© 2026 Rapheal Ngireblekuu Seymour. All rights reserved.</div></div>
+    <div class="footer-links"><a href="index.html">Home</a><a href="about.html">About</a><a href="experience.html">Experience</a><a href="college.html">College</a><a href="work.html">Work</a><a href="activities.html">Activities</a><a href="contact.html">Contact</a></div>
+  </div>
+</body>
+</html>

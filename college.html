@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>College | Rapheal Seymour</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--accent:#5bf5c2;--accent2:#7c6dfa;--accent3:#f5a05b;--text:#e8eaf0;--muted:#6b7280;--nav-h:64px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");background-size:200px 200px;pointer-events:none;z-index:9999;opacity:0.4}
+    nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(13,15,20,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;z-index:100}
+    .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);text-decoration:none;letter-spacing:-0.02em}
+    .nav-links{display:flex;gap:0.25rem;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}
+    .nav-dropdown{position:relative}
+    .nav-dropdown>span{color:var(--muted);font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;cursor:pointer;transition:color 0.2s,background 0.2s;display:flex;align-items:center;gap:0.3rem}
+    .nav-dropdown:hover>span{color:var(--text);background:var(--surface2)}
+    .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem;min-width:140px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 0.2s,transform 0.2s}
+    .nav-dropdown:hover .dropdown-menu{opacity:1;pointer-events:all;transform:translateY(0)}
+    .dropdown-menu a{display:block;color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;padding:0.45rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .dropdown-menu a:hover{color:var(--text);background:var(--surface2)}
+    .page-header{padding:calc(var(--nav-h) + 4rem) 2rem 3rem;max-width:1100px;margin:0 auto}
+    .eyebrow{font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
+    .eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--accent)}
+    .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.5rem,6vw,4.5rem);letter-spacing:-0.03em;line-height:1}
+    .page-title em{font-style:normal;color:var(--accent)}
+    .page-sub{font-family:'Fraunces',serif;font-style:italic;color:var(--muted);font-size:1.1rem;margin-top:1rem;max-width:520px;line-height:1.6}
+    section{max-width:1100px;margin:0 auto;padding:3rem 2rem}
+    hr.divider{border:none;border-top:1px solid var(--border);margin:0 2rem}
+    .section-label{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
+    .section-label::before{content:'';display:block;width:24px;height:1px;background:var(--accent)}
+    .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(1.5rem,3vw,2.2rem);letter-spacing:-0.02em;margin-bottom:2rem}
+
+    /* SCHOOL BANNER */
+    .school-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:3rem}
+    .school-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem}
+    .school-name span{color:var(--accent)}
+    .school-meta{font-size:0.8rem;color:var(--muted);margin-top:0.3rem}
+    .school-badges{display:flex;gap:0.5rem;flex-wrap:wrap}
+    .badge{font-size:0.68rem;padding:0.3rem 0.7rem;border-radius:999px;border:1px solid var(--border);color:var(--muted);letter-spacing:0.06em;text-transform:uppercase}
+    .badge.green{border-color:var(--accent);color:var(--accent)}
+    .badge.purple{border-color:var(--accent2);color:var(--accent2)}
+
+    /* COURSES */
+    .courses-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+    .course-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;transition:border-color 0.2s}
+    .course-card:hover{border-color:var(--accent2)}
+    .course-card .code{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:0.3rem}
+    .course-card .name{font-family:'Syne',sans-serif;font-weight:600;font-size:0.9rem}
+
+    /* PROJECTS */
+    .projects-list{display:flex;flex-direction:column;gap:1.5rem}
+    .project-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.75rem;display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;transition:border-color 0.2s,transform 0.2s}
+    .project-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+    .project-period{font-size:0.68rem;letter-spacing:0.08em;color:var(--muted);white-space:nowrap;padding-top:0.2rem}
+    .project-tag{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent3);margin-bottom:0.4rem}
+    .project-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.75rem}
+    .project-bullets{list-style:none;display:flex;flex-direction:column;gap:0.4rem}
+    .project-bullets li{font-size:0.78rem;color:var(--muted);line-height:1.65;padding-left:1rem;position:relative}
+    .project-bullets li::before{content:'—';position:absolute;left:0;color:var(--accent)}
+    .project-langs{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:1rem}
+    .lang-tag{font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+
+    /* TA */
+    .ta-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;padding:1.5rem}
+    .ta-card .role{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:0.25rem}
+    .ta-card .course-name{font-size:0.8rem;color:var(--accent2);margin-bottom:0.75rem}
+    .ta-card p{font-size:0.8rem;color:var(--muted);line-height:1.7}
+
+    .footer-inner{max-width:1100px;margin:4rem auto 0;padding:2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+    .footer-left .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent)}
+    .footer-left .copy{color:var(--muted);font-size:0.7rem;margin-top:0.25rem}
+    .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+    .footer-links a{color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;transition:color 0.2s}
+    .footer-links a:hover{color:var(--accent)}
+    @media(max-width:768px){.courses-grid{grid-template-columns:1fr 1fr}.project-card{grid-template-columns:1fr}.nav-links{display:none}}
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="index.html">Rapheal Seymour</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="experience.html">Experience</a></li>
+      <li><a href="college.html" class="active">College</a></li>
+      <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="work.html">Overview</a><a href="work-broadcast.html">Broadcast</a><a href="work-projects.html">Projects</a></div></div></li>
+      <li><a href="activities.html">Activities</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-header">
+    <p class="eyebrow">Academic Life</p>
+    <h1 class="page-title">College &amp;<br /><em>coursework</em></h1>
+    <p class="page-sub">My academic journey at Missouri S&T — courses, projects, and teaching.</p>
+  </div>
+
+  <hr class="divider" />
+
+  <section>
+    <div class="school-banner">
+      <div>
+        <div class="school-name"><span>Missouri University</span> of Science and Technology</div>
+        <div class="school-meta">Rolla, MO · Expected Graduation: May 2027</div>
+      </div>
+      <div class="school-badges">
+        <span class="badge green">B.S. Computer Science</span>
+        <span class="badge purple">Minor: Engineering Management</span>
+      </div>
+    </div>
+
+    <p class="section-label">Coursework</p>
+    <h2 class="section-title">Relevant courses</h2>
+    <div class="courses-grid">
+      <div class="course-card"><div class="code">CS</div><div class="name">Data Science</div></div>
+      <div class="course-card"><div class="code">CS</div><div class="name">Intro to AI</div></div>
+      <div class="course-card"><div class="code">CS</div><div class="name">Data Structures</div></div>
+      <div class="course-card"><div class="code">CS</div><div class="name">Operating Systems</div></div>
+      <div class="course-card"><div class="code">CS</div><div class="name">Computer Networks</div></div>
+      <div class="course-card"><div class="code">EE</div><div class="name">Microcontrollers</div></div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <section>
+    <p class="section-label">Projects</p>
+    <h2 class="section-title">Things I've built</h2>
+    <div class="projects-list">
+
+      <div class="project-card">
+        <div>
+          <div class="project-tag">Robotics / Systems</div>
+          <div class="project-title">Autonomous Multi-Drone Coordination System</div>
+          <ul class="project-bullets">
+            <li>Developed coordinate transformation pipelines converting SVG-based visual designs into executable 3D drone trajectories (XYZ and LLA space)</li>
+            <li>Implemented drone localization algorithms using trilateration and linear algebra for real-time positional computation</li>
+          </ul>
+          <div class="project-langs"><span class="lang-tag">C++</span><span class="lang-tag">Eigen</span><span class="lang-tag">Linear Algebra</span></div>
+        </div>
+        <div class="project-period">Aug 2025 – Jan 2026</div>
+      </div>
+
+      <div class="project-card">
+        <div>
+          <div class="project-tag">AI / Automation</div>
+          <div class="project-title">AI Data Analysis Automation Tool</div>
+          <ul class="project-bullets">
+            <li>Built a Python-based tool integrating early ChatGPT API models to automate analysis of telemetry and statistical data from Formula Electric race tests</li>
+            <li>Automated telemetry data analysis and statistical organization, reducing manual engineering workload</li>
+          </ul>
+          <div class="project-langs"><span class="lang-tag">Python</span><span class="lang-tag">ChatGPT API</span><span class="lang-tag">Telemetry</span></div>
+        </div>
+        <div class="project-period">Aug 2023 – May 2024</div>
+      </div>
+
+      <div class="project-card">
+        <div>
+          <div class="project-tag">Game Development</div>
+          <div class="project-title">Game Engine Development Projects</div>
+          <ul class="project-bullets">
+            <li>Developed 2D fighting game implementing state-driven combo system, input sequencing, and combat state management in Roblox Studio</li>
+            <li>Built 3D platforming level implementing physics-based movement, collision detection, and gameplay mechanics in Unreal Engine</li>
+          </ul>
+          <div class="project-langs"><span class="lang-tag">Lua</span><span class="lang-tag">Roblox Studio</span><span class="lang-tag">Unreal Engine</span></div>
+        </div>
+        <div class="project-period">Aug 2023 – Present</div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <section>
+    <p class="section-label">Teaching</p>
+    <h2 class="section-title">Teaching assistant</h2>
+    <div class="ta-card">
+      <div class="role">Lab Teaching Assistant</div>
+      <div class="course-name">CS1570 — Intro to C++ Programming · 2025–2026</div>
+      <p>Supporting students through foundational programming concepts, lab exercises, and debugging sessions for Missouri S&T's introductory C++ course.</p>
+    </div>
+  </section>
+
+  <div class="footer-inner">
+    <div class="footer-left"><div class="logo">Rapheal Seymour</div><div class="copy">© 2026 Rapheal Ngireblekuu Seymour. All rights reserved.</div></div>
+    <div class="footer-links"><a href="index.html">Home</a><a href="about.html">About</a><a href="experience.html">Experience</a><a href="college.html">College</a><a href="work.html">Work</a><a href="activities.html">Activities</a><a href="contact.html">Contact</a></div>
+  </div>
+</body>
+</html>

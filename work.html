@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Work | Rapheal Seymour</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--accent:#5bf5c2;--accent2:#7c6dfa;--accent3:#f5a05b;--text:#e8eaf0;--muted:#6b7280;--nav-h:64px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");background-size:200px 200px;pointer-events:none;z-index:9999;opacity:0.4}
+    nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(13,15,20,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;z-index:100}
+    .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);text-decoration:none;letter-spacing:-0.02em}
+    .nav-links{display:flex;gap:0.25rem;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}
+    .nav-dropdown{position:relative}
+    .nav-dropdown>span{color:var(--muted);font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;cursor:pointer;transition:color 0.2s,background 0.2s;display:flex;align-items:center;gap:0.3rem}
+    .nav-dropdown:hover>span{color:var(--text);background:var(--surface2)}
+    .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem;min-width:140px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 0.2s,transform 0.2s}
+    .nav-dropdown:hover .dropdown-menu{opacity:1;pointer-events:all;transform:translateY(0)}
+    .dropdown-menu a{display:block;color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;padding:0.45rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .dropdown-menu a:hover{color:var(--text);background:var(--surface2)}
+    .page-header{padding:calc(var(--nav-h) + 4rem) 2rem 3rem;max-width:1100px;margin:0 auto}
+    .eyebrow{font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
+    .eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--accent)}
+    .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.5rem,6vw,4.5rem);letter-spacing:-0.03em;line-height:1}
+    .page-title em{font-style:normal;color:var(--accent)}
+    .page-sub{font-family:'Fraunces',serif;font-style:italic;color:var(--muted);font-size:1.1rem;margin-top:1rem;max-width:520px;line-height:1.6}
+    section{max-width:1100px;margin:0 auto;padding:3rem 2rem}
+    hr.divider{border:none;border-top:1px solid var(--border);margin:0 2rem}
+    .section-label{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
+    .section-label::before{content:'';display:block;width:24px;height:1px;background:var(--accent)}
+    .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(1.5rem,3vw,2.2rem);letter-spacing:-0.02em;margin-bottom:2rem}
+
+    .work-nav{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:3rem}
+    .work-nav-btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.7rem 1.4rem;border-radius:8px;font-family:'DM Mono',monospace;font-size:0.75rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;text-decoration:none;border:1px solid var(--border);color:var(--muted);transition:all 0.2s}
+    .work-nav-btn:hover,.work-nav-btn.active{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+
+    .work-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem}
+    .work-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
+    .work-card:hover{border-color:var(--accent2);transform:translateY(-3px)}
+    .work-card-thumb{background:var(--surface2);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:2.5rem;border-bottom:1px solid var(--border)}
+    .work-card-body{padding:1.5rem}
+    .work-card-type{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem}
+    .work-card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:0.5rem}
+    .work-card-desc{font-size:0.78rem;color:var(--muted);line-height:1.65;margin-bottom:1rem}
+    .work-card-meta{display:flex;gap:0.5rem;flex-wrap:wrap}
+    .meta-tag{font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+
+    .footer-inner{max-width:1100px;margin:4rem auto 0;padding:2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+    .footer-left .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent)}
+    .footer-left .copy{color:var(--muted);font-size:0.7rem;margin-top:0.25rem}
+    .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+    .footer-links a{color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;transition:color 0.2s}
+    .footer-links a:hover{color:var(--accent)}
+    @media(max-width:768px){.work-grid{grid-template-columns:1fr}.nav-links{display:none}}
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="index.html">Rapheal Seymour</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="experience.html">Experience</a></li>
+      <li><a href="college.html">College</a></li>
+      <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="work.html">Overview</a><a href="work-broadcast.html">Broadcast</a><a href="work-projects.html">Projects</a></div></div></li>
+      <li><a href="activities.html">Activities</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-header">
+    <p class="eyebrow">Work Overview</p>
+    <h1 class="page-title">What I've<br /><em>built</em></h1>
+    <p class="page-sub">A look across my broadcast productions, technical projects, and everything in between.</p>
+  </div>
+
+  <hr class="divider" />
+
+  <section>
+    <p class="section-label">Browse By Type</p>
+    <div class="work-nav">
+      <a href="work.html" class="work-nav-btn active">All Work</a>
+      <a href="work-broadcast.html" class="work-nav-btn">🎙️ Broadcast</a>
+      <a href="work-projects.html" class="work-nav-btn">💻 CS Projects</a>
+    </div>
+
+    <h2 class="section-title">All work</h2>
+    <div class="work-grid">
+
+      <div class="work-card">
+        <div class="work-card-thumb">🎙️</div>
+        <div class="work-card-body">
+          <div class="work-card-type">Broadcast · Esports</div>
+          <div class="work-card-title">NECC Collegiate Esports Casting</div>
+          <div class="work-card-desc">Live play-by-play and color commentary for the National Esports Collegiate Conference. Covering student-athlete competition at the collegiate level.</div>
+          <div class="work-card-meta"><span class="meta-tag">Live Casting</span><span class="meta-tag">NECC</span><span class="meta-tag">2025–2026</span></div>
+        </div>
+      </div>
+
+      <div class="work-card">
+        <div class="work-card-thumb">🎮</div>
+        <div class="work-card-body">
+          <div class="work-card-type">Management · Esports</div>
+          <div class="work-card-title">S&T Esports Executive Management</div>
+          <div class="work-card-desc">Ran operations for Missouri S&T's esports organization as Executive Manager Chair — event coordination, team logistics, and growing the program's footprint.</div>
+          <div class="work-card-meta"><span class="meta-tag">Event Ops</span><span class="meta-tag">S&T Esports</span><span class="meta-tag">2025–2026</span></div>
+        </div>
+      </div>
+
+      <div class="work-card">
+        <div class="work-card-thumb">🚁</div>
+        <div class="work-card-body">
+          <div class="work-card-type">Engineering · Robotics</div>
+          <div class="work-card-title">Autonomous Multi-Drone Coordination System</div>
+          <div class="work-card-desc">Built coordinate transformation pipelines and drone localization algorithms using trilateration and linear algebra for real-time positional computation.</div>
+          <div class="work-card-meta"><span class="meta-tag">C++</span><span class="meta-tag">Eigen</span><span class="meta-tag">UAV</span><span class="meta-tag">2025–2026</span></div>
+        </div>
+      </div>
+
+      <div class="work-card">
+        <div class="work-card-thumb">🤖</div>
+        <div class="work-card-body">
+          <div class="work-card-type">AI · Automation</div>
+          <div class="work-card-title">AI Data Analysis Automation Tool</div>
+          <div class="work-card-desc">Python tool using early ChatGPT API to automate telemetry and statistical analysis from Formula Electric race tests, reducing manual engineering workload.</div>
+          <div class="work-card-meta"><span class="meta-tag">Python</span><span class="meta-tag">ChatGPT API</span><span class="meta-tag">2023–2024</span></div>
+        </div>
+      </div>
+
+      <div class="work-card">
+        <div class="work-card-thumb">🎮</div>
+        <div class="work-card-body">
+          <div class="work-card-type">Game Dev · Personal</div>
+          <div class="work-card-title">Game Engine Development Projects</div>
+          <div class="work-card-desc">2D fighting game with state-driven combat systems in Roblox Studio, and a 3D platformer with physics-based movement in Unreal Engine.</div>
+          <div class="work-card-meta"><span class="meta-tag">Lua</span><span class="meta-tag">Unreal Engine</span><span class="meta-tag">Ongoing</span></div>
+        </div>
+      </div>
+
+      <div class="work-card">
+        <div class="work-card-thumb">🧠</div>
+        <div class="work-card-body">
+          <div class="work-card-type">AI · Professional</div>
+          <div class="work-card-title">LLM Evaluation & Training — Outlier AI</div>
+          <div class="work-card-desc">Developed 50+ prompt constraints, trained 200+ contributors, and resolved 15+ critical data quality issues resulting in a 20% reduction in model error rates.</div>
+          <div class="work-card-meta"><span class="meta-tag">LLM</span><span class="meta-tag">Prompt Design</span><span class="meta-tag">2023–2025</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="footer-inner">
+    <div class="footer-left"><div class="logo">Rapheal Seymour</div><div class="copy">© 2026 Rapheal Ngireblekuu Seymour. All rights reserved.</div></div>
+    <div class="footer-links"><a href="index.html">Home</a><a href="about.html">About</a><a href="experience.html">Experience</a><a href="college.html">College</a><a href="work.html">Work</a><a href="activities.html">Activities</a><a href="contact.html">Contact</a></div>
+  </div>
+</body>
+</html>
