@@ -33,8 +33,6 @@
     .section-label{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
     .section-label::before{content:'';display:block;width:24px;height:1px;background:var(--accent)}
     .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(1.5rem,3vw,2.2rem);letter-spacing:-0.02em;margin-bottom:2rem}
-
-    /* TIMELINE */
     .timeline{display:flex;flex-direction:column;gap:0}
     .job{display:grid;grid-template-columns:200px 1fr;gap:0 2.5rem;position:relative;padding-bottom:2.5rem}
     .job:last-child{padding-bottom:0}
@@ -50,7 +48,6 @@
     .job-bullets{list-style:none;display:flex;flex-direction:column;gap:0.5rem}
     .job-bullets li{font-size:0.8rem;color:var(--muted);line-height:1.7;padding-left:1rem;position:relative}
     .job-bullets li::before{content:'—';position:absolute;left:0;color:var(--accent)}
-
     .footer-inner{max-width:1100px;margin:4rem auto 0;padding:2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
     .footer-left .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent)}
     .footer-left .copy{color:var(--muted);font-size:0.7rem;margin-top:0.25rem}
@@ -62,36 +59,29 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="index.html">Rapheal Seymour</a>
+    <a class="nav-logo" href="../HomeFolder/index.html">Rapheal Seymour</a>
     <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="about.html">About</a></li>
-      <li><a href="experience.html" class="active">Experience</a></li>
-      <li><a href="college.html">College</a></li>
-      <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="work.html">Overview</a><a href="work-broadcast.html">Broadcast</a><a href="work-projects.html">Projects</a></div></div></li>
-      <li><a href="activities.html">Activities</a></li>
-      <li><a href="contact.html">Contact</a></li>
+      <li><a href="../HomeFolder/index.html">Home</a></li>
+      <li><a href="../AboutFolder/about.html">About</a></li>
+      <li><a href="../ExperienceFolder/experience.html" class="active">Experience</a></li>
+      <li><a href="../CollegeFolder/college.html">College</a></li>
+      <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="../WorkFolder/work.html">Overview</a><a href="../WorkFolder/work-broadcast.html">Broadcast</a><a href="../WorkFolder/work-projects.html">Projects</a></div></div></li>
+      <li><a href="../ActivitiesFolder/activities.html">Activities</a></li>
+      <li><a href="../ContactFolder/contact.html">Contact</a></li>
     </ul>
   </nav>
-
   <div class="page-header">
     <p class="eyebrow">Work Experience</p>
     <h1 class="page-title">Where I've<br /><em>worked</em></h1>
     <p class="page-sub">A timeline of roles across AI development, retail operations, and campus leadership.</p>
   </div>
-
   <hr class="divider" />
-
   <section>
     <p class="section-label">Professional</p>
     <h2 class="section-title">Work history</h2>
     <div class="timeline">
-
       <div class="job">
-        <div class="job-date">
-          <div class="period">Aug 2025 – May 2026</div>
-          <div class="location">Rolla, MO</div>
-        </div>
+        <div class="job-date"><div class="period">Aug 2025 – May 2026</div><div class="location">Rolla, MO</div></div>
         <div class="job-body">
           <div class="job-company">Academy Sports &amp; Outdoors</div>
           <div class="job-title">Fulfillment Associate</div>
@@ -101,12 +91,8 @@
           </ul>
         </div>
       </div>
-
       <div class="job">
-        <div class="job-date">
-          <div class="period">May 2023 – May 2025</div>
-          <div class="location">Remote · Oakland, CA</div>
-        </div>
+        <div class="job-date"><div class="period">May 2023 – May 2025</div><div class="location">Remote · Oakland, CA</div></div>
         <div class="job-body">
           <div class="job-company">Outlier AI</div>
           <div class="job-title">AI Database Developer</div>
@@ -114,16 +100,12 @@
             <li>Developed 50+ prompt constraints and classification rules to evaluate and improve LLM output quality</li>
             <li>Contributed to LLM evaluation and training workflows through structured prompt design and output validation</li>
             <li>Trained 200+ contributors on AI evaluation workflows and data validation standards</li>
-            <li>Spearheaded a project that identified and resolved 15+ critical data quality issues in training data, resulting in a 20% reduction in model error rates and improved prediction accuracy</li>
+            <li>Spearheaded a project that identified and resolved 15+ critical data quality issues in training data, resulting in a 20% reduction in model error rates</li>
           </ul>
         </div>
       </div>
-
       <div class="job">
-        <div class="job-date">
-          <div class="period">Aug 2022 – May 2023</div>
-          <div class="location">Rolla, MO</div>
-        </div>
+        <div class="job-date"><div class="period">Aug 2022 – May 2023</div><div class="location">Rolla, MO</div></div>
         <div class="job-body">
           <div class="job-company">Missouri S&amp;T Campus Job</div>
           <div class="job-title">Student Programs PRO Leader</div>
@@ -134,13 +116,11 @@
           </ul>
         </div>
       </div>
-
     </div>
   </section>
-
   <div class="footer-inner">
     <div class="footer-left"><div class="logo">Rapheal Seymour</div><div class="copy">© 2026 Rapheal Ngireblekuu Seymour. All rights reserved.</div></div>
-    <div class="footer-links"><a href="index.html">Home</a><a href="about.html">About</a><a href="experience.html">Experience</a><a href="college.html">College</a><a href="work.html">Work</a><a href="activities.html">Activities</a><a href="contact.html">Contact</a></div>
+    <div class="footer-links"><a href="../HomeFolder/index.html">Home</a><a href="../AboutFolder/about.html">About</a><a href="../ExperienceFolder/experience.html">Experience</a><a href="../CollegeFolder/college.html">College</a><a href="../WorkFolder/work.html">Work</a><a href="../ActivitiesFolder/activities.html">Activities</a><a href="../ContactFolder/contact.html">Contact</a></div>
   </div>
 </body>
 </html>
