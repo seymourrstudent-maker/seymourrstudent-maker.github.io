@@ -40,8 +40,11 @@
     .contact-value{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text)}
     .contact-arrow{color:var(--accent);font-size:1.2rem}
 
+    .contact-layout{display:grid;grid-template-columns:1fr 1.1fr;gap:3rem;align-items:start}
+    .profile-photo{width:100%;border-radius:16px;border:1px solid var(--border);object-fit:cover;aspect-ratio:3/4;display:block}
     .note{font-size:0.78rem;color:var(--muted);line-height:1.7;text-align:center;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
     .note strong{color:var(--text);font-weight:500}
+    @media(max-width:768px){.contact-layout{grid-template-columns:1fr}}
 
     .footer-inner{max-width:1100px;margin:4rem auto 0;padding:2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
     .footer-left .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent)}
@@ -75,23 +78,25 @@
   <hr class="divider" />
 
   <section>
-    <div class="contact-options">
-
-      <a class="contact-card" href="mailto:seymourr.student@gmail.com">
-        <div class="contact-card-left">
-          <div class="contact-icon">✉️</div>
-          <div>
-            <div class="contact-label">Email</div>
-            <div class="contact-value">seymourr.student@gmail.com</div>
-          </div>
+    <div class="contact-layout">
+      <img class="profile-photo" src="FrontProfile.png" alt="Rapheal Seymour" />
+      <div>
+        <div class="contact-options">
+          <a class="contact-card" href="mailto:seymourr.student@gmail.com">
+            <div class="contact-card-left">
+              <div class="contact-icon">✉️</div>
+              <div>
+                <div class="contact-label">Email</div>
+                <div class="contact-value">seymourr.student@gmail.com</div>
+              </div>
+            </div>
+            <div class="contact-arrow">→</div>
+          </a>
         </div>
-        <div class="contact-arrow">→</div>
-      </a>
-
-    </div>
-
-    <div class="note">
-      <strong>Note:</strong> I'm currently a student at Missouri S&T with an expected graduation of May 2027. I'm open to internships, part-time opportunities, and conversations about broadcast, engineering, or AI.
+        <div class="note">
+          <strong>Note:</strong> I'm currently a student at Missouri S&T with an expected graduation of May 2027. I'm open to internships, part-time opportunities, and conversations about broadcast, engineering, or AI.
+        </div>
+      </div>
     </div>
   </section>
 
