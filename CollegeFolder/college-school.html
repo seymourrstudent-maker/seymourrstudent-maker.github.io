@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Experience | Rapheal Seymour</title>
+  <title>School Projects | Rapheal Seymour</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
   <style>
     :root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--accent:#5bf5c2;--accent2:#7c6dfa;--accent3:#f5a05b;--text:#e8eaf0;--muted:#6b7280;--nav-h:64px}
@@ -33,28 +33,28 @@
     .section-label{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
     .section-label::before{content:'';display:block;width:24px;height:1px;background:var(--accent)}
     .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(1.5rem,3vw,2.2rem);letter-spacing:-0.02em;margin-bottom:2rem}
-    .timeline{display:flex;flex-direction:column;gap:0}
-    .job{display:grid;grid-template-columns:200px 1fr;gap:0 2.5rem;position:relative;padding-bottom:2.5rem}
-    .job:last-child{padding-bottom:0}
-    .job::after{content:'';position:absolute;left:199px;top:8px;bottom:0;width:1px;background:var(--border)}
-    .job:last-child::after{display:none}
-    .job-date{text-align:right;padding-top:0.1rem}
-    .job-date .period{font-size:0.72rem;color:var(--accent);letter-spacing:0.06em}
-    .job-date .location{font-size:0.68rem;color:var(--muted);margin-top:0.3rem}
-    .job-body{position:relative;padding-left:2rem}
-    .job-body::before{content:'';position:absolute;left:-6px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--accent)}
-    .job-company{font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent3);margin-bottom:0.3rem}
-    .job-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.15rem;margin-bottom:0.75rem}
-    .job-bullets{list-style:none;display:flex;flex-direction:column;gap:0.5rem}
-    .job-bullets li{font-size:0.8rem;color:var(--muted);line-height:1.7;padding-left:1rem;position:relative}
-    .job-bullets li::before{content:'—';position:absolute;left:0;color:var(--accent)}
+    .projects-list{display:flex;flex-direction:column;gap:1.5rem}
+    .project-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.75rem;display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;transition:border-color 0.2s,transform 0.2s}
+    .project-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+    .project-period{font-size:0.68rem;letter-spacing:0.08em;color:var(--muted);white-space:nowrap;padding-top:0.2rem}
+    .project-tag{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent3);margin-bottom:0.4rem}
+    .project-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.75rem}
+    .project-bullets{list-style:none;display:flex;flex-direction:column;gap:0.4rem}
+    .project-bullets li{font-size:0.78rem;color:var(--muted);line-height:1.65;padding-left:1rem;position:relative}
+    .project-bullets li::before{content:'—';position:absolute;left:0;color:var(--accent)}
+    .project-langs{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:1rem}
+    .lang-tag{font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+    .ta-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;padding:1.5rem}
+    .ta-card .role{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:0.25rem}
+    .ta-card .course-name{font-size:0.8rem;color:var(--accent2);margin-bottom:0.75rem}
+    .ta-card p{font-size:0.8rem;color:var(--muted);line-height:1.7}
     .footer-inner{max-width:1100px;margin:4rem auto 0;padding:2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
     .footer-left .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent)}
     .footer-left .copy{color:var(--muted);font-size:0.7rem;margin-top:0.25rem}
     .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
     .footer-links a{color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;transition:color 0.2s}
     .footer-links a:hover{color:var(--accent)}
-    @media(max-width:768px){.job{grid-template-columns:1fr}.job::after{display:none}.job-date{text-align:left}.nav-links{display:none}}
+    @media(max-width:768px){.project-card{grid-template-columns:1fr}.nav-links{display:none}}
   </style>
 </head>
 <body>
@@ -63,7 +63,7 @@
     <ul class="nav-links">
       <li><a href="../HomeFolder/index.html">Home</a></li>
       <li><a href="../AboutFolder/about.html">About</a></li>
-      <li><a href="../ExperienceFolder/experience.html" class="active">Experience</a></li>
+      <li><a href="../ExperienceFolder/experience.html">Experience</a></li>
       <li><div class="nav-dropdown"><span>College ▾</span><div class="dropdown-menu"><a href="../CollegeFolder/college.html">Overview</a><a href="../CollegeFolder/college-school.html">School Projects</a><a href="../CollegeFolder/college-personal.html">Personal Projects</a></div></div></li>
       <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="../WorkFolder/work.html">Overview</a><a href="../WorkFolder/work-broadcast.html">Broadcast</a><a href="../WorkFolder/work-projects.html">Projects</a></div></div></li>
       <li><a href="../ActivitiesFolder/activities.html">Activities</a></li>
@@ -71,52 +71,30 @@
     </ul>
   </nav>
   <div class="page-header">
-    <p class="eyebrow">Work Experience</p>
-    <h1 class="page-title">Where I've<br /><em>worked</em></h1>
-    <p class="page-sub">A timeline of roles across AI development, retail operations, and campus leadership.</p>
+    <p class="eyebrow">College · School Projects</p>
+    <h1 class="page-title">Built for<br /><em>class</em></h1>
+    <p class="page-sub">Projects I built in the context of school — coursework, clubs, and academic research at Missouri S&T.</p>
   </div>
   <hr class="divider" />
   <section>
-    <p class="section-label">Professional</p>
-    <h2 class="section-title">Work history</h2>
-    <div class="timeline">
-      <div class="job">
-        <div class="job-date"><div class="period">Aug 2025 – May 2026</div><div class="location">Rolla, MO</div></div>
-        <div class="job-body">
-          <div class="job-company">Academy Sports &amp; Outdoors</div>
-          <div class="job-title">Fulfillment Associate</div>
-          <ul class="job-bullets">
-            <li>Executed end-to-end online order fulfillment including inventory verification, packing, staging, and customer pickup support</li>
-            <li>Maintained organized workflows and resolved fulfillment issues in a high-volume retail environment</li>
-          </ul>
-        </div>
+    <p class="section-label">Projects</p>
+    <h2 class="section-title">School-built work</h2>
+    <div class="projects-list">
+      <div class="project-card">
+        <div><div class="project-tag">Robotics / Systems</div><div class="project-title">Autonomous Multi-Drone Coordination System</div><ul class="project-bullets"><li>Developed coordinate transformation pipelines converting SVG-based visual designs into executable 3D drone trajectories</li><li>Implemented drone localization algorithms using trilateration and linear algebra for real-time positional computation</li></ul><div class="project-langs"><span class="lang-tag">C++</span><span class="lang-tag">Eigen</span><span class="lang-tag">Linear Algebra</span></div></div>
+        <div class="project-period">Aug 2025 – Jan 2026</div>
       </div>
-      <div class="job">
-        <div class="job-date"><div class="period">May 2023 – May 2025</div><div class="location">Remote · Oakland, CA</div></div>
-        <div class="job-body">
-          <div class="job-company">Outlier AI</div>
-          <div class="job-title">AI Database Developer</div>
-          <ul class="job-bullets">
-            <li>Developed 50+ prompt constraints and classification rules to evaluate and improve LLM output quality</li>
-            <li>Contributed to LLM evaluation and training workflows through structured prompt design and output validation</li>
-            <li>Trained 200+ contributors on AI evaluation workflows and data validation standards</li>
-            <li>Spearheaded a project that identified and resolved 15+ critical data quality issues in training data, resulting in a 20% reduction in model error rates</li>
-          </ul>
-        </div>
-      </div>
-      <div class="job">
-        <div class="job-date"><div class="period">Aug 2022 – May 2023</div><div class="location">Rolla, MO</div></div>
-        <div class="job-body">
-          <div class="job-company">Missouri S&amp;T Campus Job</div>
-          <div class="job-title">Student Programs PRO Leader</div>
-          <ul class="job-bullets">
-            <li>Designed and facilitated new student events such as Advising and Registration Day, Miner Welcome Bash, and Opening Week</li>
-            <li>Collaborated with university sponsors like Nucor and Garmin to hold organized on-campus events</li>
-            <li>Organized over 200 student applications, managing registration schedules, on-campus visits, and Kummer Vanguard program requirements</li>
-          </ul>
-        </div>
+      <div class="project-card">
+        <div><div class="project-tag">AI / Automation</div><div class="project-title">AI Data Analysis Automation Tool</div><ul class="project-bullets"><li>Built a Python-based tool integrating early ChatGPT API models to automate analysis of telemetry and statistical data from Formula Electric race tests</li><li>Automated telemetry data analysis and statistical organization, reducing manual engineering workload</li></ul><div class="project-langs"><span class="lang-tag">Python</span><span class="lang-tag">ChatGPT API</span><span class="lang-tag">Telemetry</span></div></div>
+        <div class="project-period">Aug 2023 – May 2024</div>
       </div>
     </div>
+  </section>
+  <hr class="divider" />
+  <section>
+    <p class="section-label">Teaching</p>
+    <h2 class="section-title">Teaching assistant</h2>
+    <div class="ta-card"><div class="role">Lab Teaching Assistant</div><div class="course-name">CS1570 — Intro to C++ Programming · 2025–2026</div><p>Supporting students through foundational programming concepts, lab exercises, and debugging sessions for Missouri S&T's introductory C++ course.</p></div>
   </section>
   <div class="footer-inner">
     <div class="footer-left"><div class="logo">Rapheal Seymour</div><div class="copy">© 2026 Rapheal Ngireblekuu Seymour. All rights reserved.</div></div>
