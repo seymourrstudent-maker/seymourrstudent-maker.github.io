@@ -30,44 +30,46 @@
     .dropdown-menu a{display:block;color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;padding:0.45rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
     .dropdown-menu a:hover{color:var(--text);background:var(--surface2)}
 
-    /* ── chat app shell ── */
+    /* ── app shell ── */
     .app{flex:1;display:grid;grid-template-rows:auto 1fr auto;max-width:860px;width:100%;margin:0 auto;padding:0 16px;overflow:hidden}
 
     /* ── chat header ── */
-    .chat-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0}
-    .chat-logo{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;color:var(--accent)}
-    .status-pill{display:flex;align-items:center;gap:7px;font-size:.75rem;font-family:var(--font-mono);color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:5px 12px;border-radius:999px;transition:color .3s}
-    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-    .status-pill.connected{color:var(--green)}.status-pill.connected .status-dot{background:var(--green);box-shadow:0 0 6px var(--green)}
-    .status-pill.error{color:var(--red)}.status-pill.error .status-dot{background:var(--red)}
-
-    /* ── toolbar ── */
-    #toolbar{display:none;padding:8px 0 6px;gap:8px;flex-wrap:wrap}
+    .chat-header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 14px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;flex-wrap:wrap}
+    .chat-logo{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;letter-spacing:-0.02em;color:var(--accent)}
+    .room-badge{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-mono);font-size:.8rem}
+    .room-badge .code{color:var(--accent);font-weight:600;letter-spacing:0.12em}
+    .room-badge .copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:0;font-size:.75rem;transition:color .2s;font-family:var(--font-mono)}
+    .room-badge .copy-btn:hover{color:var(--accent)}
+    #toolbar{display:none;gap:8px;flex-wrap:wrap;align-items:center}
     #toolbar.active{display:flex}
-    .btn-sm{padding:7px 14px;font-size:.78rem;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius);cursor:pointer;font-family:'DM Mono',monospace;transition:color .2s,border-color .2s}
+    .btn-sm{padding:6px 12px;font-size:.72rem;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;transition:color .2s,border-color .2s}
     .btn-sm:hover{color:var(--text);border-color:var(--accent)}
 
     /* ── connect panel ── */
-    #connect-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 24px;animation:fadeUp .4s ease;overflow-y:auto}
-    #connect-panel h2{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em;color:var(--accent)}
-    .field-row{display:flex;gap:10px;width:100%;max-width:440px;flex-wrap:wrap}
-    .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:120px}
-    .field label{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-    .field input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;font-family:var(--font-mono);font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s}
+    #connect-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 16px;overflow-y:auto;animation:fadeUp .35s ease}
+
+    /* mode toggle */
+    .mode-tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;width:100%;max-width:400px}
+    .mode-tab{flex:1;padding:8px 0;border:none;border-radius:7px;background:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s}
+    .mode-tab.active{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+
+    /* form fields */
+    .connect-form{display:flex;flex-direction:column;gap:14px;width:100%;max-width:400px;animation:fadeUp .25s ease}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .field input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;font-family:var(--font-mono);font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s;width:100%}
     .field input:focus{border-color:var(--accent)}
-    .btn-primary{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:var(--bg);width:100%;max-width:440px;padding:13px;border-radius:var(--radius);border:none;font-family:'DM Mono',monospace;font-size:.82rem;font-weight:500;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:filter .15s,transform .1s}
+
+    /* generated room code display */
+    .code-display{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+    .code-display .big-code{font-family:var(--font-mono);font-size:1.6rem;font-weight:600;color:var(--accent);letter-spacing:0.25em;flex:1}
+    .code-display .icon-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;padding:6px 9px;font-size:.8rem;transition:color .2s,border-color .2s;font-family:var(--font-mono)}
+    .code-display .icon-btn:hover{color:var(--accent);border-color:var(--accent)}
+    .code-hint{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.6;max-width:400px}
+
+    .btn-primary{display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--bg);width:100%;max-width:400px;padding:13px;border-radius:var(--radius);border:none;font-family:'DM Mono',monospace;font-size:.8rem;font-weight:500;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:filter .15s,transform .1s}
     .btn-primary:hover{filter:brightness(1.1)}
     .btn-primary:active{transform:scale(.97)}
-
-    /* ── setup accordion ── */
-    .setup-box{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-    .setup-toggle{width:100%;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:color .2s}
-    .setup-toggle:hover{color:var(--text)}
-    .setup-body{display:none;padding:0 14px 14px;border-top:1px solid var(--border)}
-    .setup-body.open{display:block}
-    .setup-body ol{padding-left:1.1rem;margin-top:10px;display:flex;flex-direction:column;gap:8px}
-    .setup-body li{font-size:.78rem;color:var(--muted);line-height:1.6}
-    .setup-body code{color:var(--accent);font-family:var(--font-mono);font-size:.75rem}
 
     /* ── messages ── */
     #chat-area{display:none;flex-direction:column;overflow:hidden}
@@ -86,7 +88,6 @@
     .msg.system .msg-author{display:none}
     .msg.join .msg-text{color:var(--green)}
     .msg.leave .msg-text{color:var(--yellow)}
-    .msg.server .msg-text{color:var(--accent)}
     .msg.own .msg-author{color:var(--accent)}
     .uc-0{color:#f472b6}.uc-1{color:#fb923c}.uc-2{color:#34d399}.uc-3{color:#a78bfa}
     .uc-4{color:#38bdf8}.uc-5{color:#fbbf24}.uc-6{color:#e879f9}.uc-7{color:#4ade80}
@@ -124,49 +125,52 @@
     <!-- Chat header -->
     <div class="chat-header">
       <span class="chat-logo">Group Chat</span>
-      <div id="status" class="status-pill">
-        <span class="status-dot"></span>
-        <span id="status-text">disconnected</span>
+      <div id="room-badge" class="room-badge" style="display:none">
+        Room <span id="badge-code" class="code"></span>
+        <button class="copy-btn" onclick="copyRoomCode()" title="Copy room code">Copy</button>
       </div>
       <div id="toolbar">
-        <button class="btn-sm" onclick="sendCmd('/list')">👥 who's online</button>
-        <button class="btn-sm" onclick="sendCmd('/help')">❓ help</button>
-        <button class="btn-sm" onclick="disconnect()">⏻ leave</button>
+        <button class="btn-sm" onclick="listUsers()">👥 who's here</button>
+        <button class="btn-sm" onclick="leaveRoom()">⏻ leave</button>
       </div>
     </div>
 
     <!-- Connect panel -->
     <div id="connect-panel">
-      <h2>Join the Chat</h2>
-      <div class="field-row">
-        <div class="field" style="flex:2">
-          <label>Bridge host</label>
-          <input id="ws-host" type="text" value="localhost" placeholder="localhost" />
-        </div>
-        <div class="field" style="flex:1">
-          <label>Port</label>
-          <input id="ws-port" type="number" value="8765" placeholder="8765" />
-        </div>
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-create" onclick="setMode('create')">Create Room</button>
+        <button class="mode-tab" id="tab-join" onclick="setMode('join')">Join Room</button>
       </div>
-      <div class="field-row">
+
+      <!-- Create mode -->
+      <div class="connect-form" id="create-form">
         <div class="field">
           <label>Your name</label>
-          <input id="name-input" type="text" placeholder="e.g. Alice" maxlength="24" />
+          <input id="create-name" type="text" placeholder="e.g. Rapheal" maxlength="24" />
         </div>
+        <div class="field">
+          <label>Room code (share this with others)</label>
+          <div class="code-display">
+            <span class="big-code" id="generated-code"></span>
+            <button class="icon-btn" onclick="regenerateCode()" title="Generate new code">↺</button>
+            <button class="icon-btn" onclick="copyGeneratedCode()">Copy</button>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="createRoom()">Start Room →</button>
+        <p class="code-hint">Open a new tab, go to this page, choose <strong>Join Room</strong>, and enter the code above.</p>
       </div>
-      <button class="btn-primary" onclick="connect()">Connect →</button>
-      <div class="setup-box">
-        <button class="setup-toggle" onclick="toggleSetup(this)">
-          <span>Setup instructions</span><span id="setup-arrow">▾</span>
-        </button>
-        <div class="setup-body">
-          <ol>
-            <li>Install the bridge dependency:<br/><code>pip install websockets</code></li>
-            <li>Start the TCP server:<br/><code>python server/server.py</code></li>
-            <li>Start the WebSocket bridge:<br/><code>python web_client/ws_bridge.py</code></li>
-            <li>Enter your name above and click <strong>Connect</strong>.</li>
-          </ol>
+
+      <!-- Join mode -->
+      <div class="connect-form" id="join-form" style="display:none">
+        <div class="field">
+          <label>Your name</label>
+          <input id="join-name" type="text" placeholder="e.g. Alice" maxlength="24" />
         </div>
+        <div class="field">
+          <label>Room code</label>
+          <input id="join-code" type="text" placeholder="e.g. WXYZ" maxlength="8" style="text-transform:uppercase;letter-spacing:0.15em;font-size:1rem" />
+        </div>
+        <button class="btn-primary" onclick="joinRoom()">Join Room →</button>
       </div>
     </div>
 
@@ -186,58 +190,176 @@
   </div>
 
 <script>
-  // ── setup accordion ───────────────────────────────────────────────────────
-  function toggleSetup(btn) {
-    const body  = btn.nextElementSibling;
-    const arrow = document.getElementById("setup-arrow");
-    body.classList.toggle("open");
-    arrow.textContent = body.classList.contains("open") ? "▴" : "▾";
-  }
-
-  // ── state ──────────────────────────────────────────────────────────────────
-  let ws = null;
-  let myName = "";
-  let nameAcked = false;
-  let userColors = {};
+  // ── state ─────────────────────────────────────────────────────────────────
+  let channel  = null;
+  let myName   = "";
+  let roomCode = "";
+  let onlineUsers = new Set();
+  let colorMap = {};
   let colorIdx = 0;
 
-  const COLOR_CLASSES = ["uc-0","uc-1","uc-2","uc-3","uc-4","uc-5","uc-6","uc-7"];
+  const COLORS = ["uc-0","uc-1","uc-2","uc-3","uc-4","uc-5","uc-6","uc-7"];
+  const CHARS  = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-  function colorFor(name) {
-    if (name === myName) return "";
-    if (!userColors[name]) userColors[name] = COLOR_CLASSES[colorIdx++ % COLOR_CLASSES.length];
-    return userColors[name];
-  }
-
-  // ── DOM refs ───────────────────────────────────────────────────────────────
+  // ── DOM refs ──────────────────────────────────────────────────────────────
   const $messages     = document.getElementById("messages");
   const $msgInput     = document.getElementById("msg-input");
-  const $status       = document.getElementById("status");
-  const $statusText   = document.getElementById("status-text");
   const $connectPanel = document.getElementById("connect-panel");
   const $chatArea     = document.getElementById("chat-area");
   const $toolbar      = document.getElementById("toolbar");
+  const $roomBadge    = document.getElementById("room-badge");
+  const $badgeCode    = document.getElementById("badge-code");
 
-  function setStatus(label, cls) {
-    $statusText.textContent = label;
-    $status.className = "status-pill " + (cls || "");
+  // ── mode toggle ───────────────────────────────────────────────────────────
+  function setMode(mode) {
+    document.getElementById("create-form").style.display = mode === "create" ? "flex" : "none";
+    document.getElementById("join-form").style.display   = mode === "join"   ? "flex" : "none";
+    document.getElementById("tab-create").classList.toggle("active", mode === "create");
+    document.getElementById("tab-join").classList.toggle("active", mode === "join");
   }
 
-  function showChat() {
+  // ── room code generation ──────────────────────────────────────────────────
+  function generateCode() {
+    return Array.from({length: 4}, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join("");
+  }
+
+  function regenerateCode() {
+    document.getElementById("generated-code").textContent = generateCode();
+  }
+
+  function copyGeneratedCode() {
+    const code = document.getElementById("generated-code").textContent;
+    navigator.clipboard.writeText(code).then(() => flashCopy("generated-code"));
+  }
+
+  function copyRoomCode() {
+    navigator.clipboard.writeText(roomCode).then(() => {
+      const btn = document.querySelector(".room-badge .copy-btn");
+      const prev = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = prev, 1500);
+    });
+  }
+
+  function flashCopy(id) {
+    const el = document.getElementById(id);
+    const prev = el.style.color;
+    el.style.color = "var(--green)";
+    setTimeout(() => el.style.color = prev, 1000);
+  }
+
+  // ── enter room (shared logic) ─────────────────────────────────────────────
+  function enterRoom(code, name) {
+    roomCode = code.toUpperCase().replace(/\s/g, "");
+    myName   = name.trim();
+
+    if (!roomCode || !myName) { alert("Please fill in all fields."); return; }
+
+    onlineUsers.clear();
+    onlineUsers.add(myName);
+    colorMap = {};
+    colorIdx = 0;
+
+    channel = new BroadcastChannel("groupchat_" + roomCode);
+    channel.onmessage = handleIncoming;
+
+    // Announce ourselves to any other tabs already in the room
+    channel.postMessage({ type: "join", name: myName, ts: now() });
+
     $connectPanel.style.display = "none";
     $chatArea.classList.add("active");
     $toolbar.classList.add("active");
+    $badgeCode.textContent = roomCode;
+    $roomBadge.style.display = "flex";
     $msgInput.focus();
+
+    addMessage({ ts: now(), text: `You joined room ${roomCode}`, type: "join" });
   }
 
-  function showConnect() {
-    $connectPanel.style.display = "flex";
+  function createRoom() {
+    const name = document.getElementById("create-name").value.trim();
+    const code = document.getElementById("generated-code").textContent;
+    enterRoom(code, name);
+  }
+
+  function joinRoom() {
+    const name = document.getElementById("join-name").value.trim();
+    const code = document.getElementById("join-code").value.trim();
+    enterRoom(code, name);
+  }
+
+  // ── incoming messages ─────────────────────────────────────────────────────
+  function handleIncoming(event) {
+    const msg = event.data;
+
+    if (msg.type === "join") {
+      if (msg.name === myName) return;
+      onlineUsers.add(msg.name);
+      addMessage({ ts: msg.ts, text: `${msg.name} joined the room`, type: "join" });
+      // Tell the new arrival we're here
+      channel.postMessage({ type: "here", name: myName, ts: now() });
+    }
+
+    else if (msg.type === "here") {
+      if (msg.name === myName) return;
+      onlineUsers.add(msg.name);
+    }
+
+    else if (msg.type === "leave") {
+      onlineUsers.delete(msg.name);
+      addMessage({ ts: msg.ts, text: `${msg.name} left the room`, type: "leave" });
+    }
+
+    else if (msg.type === "message") {
+      addMessage({ ts: msg.ts, author: msg.name, text: msg.text, type: "" });
+    }
+  }
+
+  // ── send ──────────────────────────────────────────────────────────────────
+  function sendMessage() {
+    if (!channel) return;
+    const text = $msgInput.value.trim();
+    if (!text) return;
+
+    const ts = now();
+    // Render in our own tab (BroadcastChannel doesn't echo to sender)
+    addMessage({ ts, author: myName, text, type: "own" });
+    // Broadcast to other tabs
+    channel.postMessage({ type: "message", name: myName, text, ts });
+
+    $msgInput.value = "";
+    $msgInput.style.height = "auto";
+  }
+
+  // ── commands ──────────────────────────────────────────────────────────────
+  function listUsers() {
+    const list = [...onlineUsers].sort().join(", ");
+    addMessage({ ts: now(), text: `Online (${onlineUsers.size}): ${list}`, type: "system" });
+  }
+
+  function leaveRoom() {
+    if (channel) {
+      channel.postMessage({ type: "leave", name: myName, ts: now() });
+      channel.close();
+      channel = null;
+    }
     $chatArea.classList.remove("active");
     $toolbar.classList.remove("active");
+    $roomBadge.style.display = "none";
+    $connectPanel.style.display = "flex";
+    $messages.innerHTML = "";
+    onlineUsers.clear();
   }
 
-  function scrollToBottom() {
-    $messages.scrollTop = $messages.scrollHeight;
+  // ── helpers ───────────────────────────────────────────────────────────────
+  function colorFor(name) {
+    if (name === myName) return "";
+    if (!colorMap[name]) colorMap[name] = COLORS[colorIdx++ % COLORS.length];
+    return colorMap[name];
+  }
+
+  function now() {
+    return new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
 
   function addMessage({ ts, author, text, type }) {
@@ -266,111 +388,7 @@
     el.appendChild(tsEl);
     el.appendChild(bodyEl);
     $messages.appendChild(el);
-    scrollToBottom();
-  }
-
-  // ── parse server messages ─────────────────────────────────────────────────
-  function parseAndRender(raw) {
-    const lines = raw.split("\n");
-    for (const line of lines) {
-      if (!line.trim()) continue;
-
-      if (line.startsWith("Enter your name:")) continue;
-      if (line.startsWith("Welcome")) {
-        addMessage({ ts: now(), text: line, type: "server" }); continue;
-      }
-
-      const tsMatch = line.match(/^\[(\d{2}:\d{2}:\d{2})\]\s+(.*)/s);
-      if (!tsMatch) {
-        addMessage({ ts: now(), text: line, type: "system" }); continue;
-      }
-      const ts   = tsMatch[1];
-      const body = tsMatch[2].trim();
-
-      if (body.startsWith("***")) {
-        const lower = body.toLowerCase();
-        const type  = lower.includes("joined") ? "join" : lower.includes("left") ? "leave" : "system";
-        addMessage({ ts, text: body.replace(/\*{3}/g, "").trim(), type }); continue;
-      }
-
-      if (!body.includes(":") || body.startsWith("Online") || body.startsWith("Commands")) {
-        addMessage({ ts, text: body, type: "server" }); continue;
-      }
-
-      const colonIdx = body.indexOf(":");
-      const author   = body.slice(0, colonIdx).trim();
-      const text     = body.slice(colonIdx + 1).trim();
-      const type     = author === myName ? "own" : "";
-      addMessage({ ts, author, text, type });
-    }
-  }
-
-  function now() {
-    return new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  }
-
-  // ── connect / disconnect ──────────────────────────────────────────────────
-  function connect() {
-    const host = document.getElementById("ws-host").value.trim() || "localhost";
-    const port = document.getElementById("ws-port").value.trim() || "8765";
-    myName     = document.getElementById("name-input").value.trim();
-    nameAcked  = false;
-
-    if (!myName) { alert("Please enter a name."); return; }
-
-    const url = `ws://${host}:${port}`;
-    setStatus("connecting…", "");
-
-    try { ws = new WebSocket(url); }
-    catch(e) { setStatus("error", "error"); return; }
-
-    ws.onopen = () => {
-      setStatus(`connected as ${myName}`, "connected");
-      showChat();
-      addMessage({ ts: now(), text: `Connected to ${url}`, type: "server" });
-    };
-
-    ws.onmessage = (ev) => {
-      const text = ev.data;
-      if (!nameAcked && text.includes("Enter your name:")) {
-        ws.send(myName);
-        nameAcked = true;
-        return;
-      }
-      parseAndRender(text);
-    };
-
-    ws.onerror = () => {
-      setStatus("connection error", "error");
-      addMessage({ ts: now(), text: `Could not connect to ${url}. Is ws_bridge.py running?`, type: "leave" });
-    };
-
-    ws.onclose = () => {
-      setStatus("disconnected", "");
-      addMessage({ ts: now(), text: "Disconnected from server.", type: "leave" });
-      showConnect();
-    };
-  }
-
-  function disconnect() {
-    if (ws) { ws.send("/quit"); ws.close(); ws = null; }
-    showConnect();
-    setStatus("disconnected", "");
-  }
-
-  // ── sending ───────────────────────────────────────────────────────────────
-  function sendMessage() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const text = $msgInput.value.trim();
-    if (!text) return;
-    ws.send(text);
-    $msgInput.value = "";
-    $msgInput.style.height = "auto";
-  }
-
-  function sendCmd(cmd) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(cmd);
+    $messages.scrollTop = $messages.scrollHeight;
   }
 
   // ── textarea auto-resize + Enter key ─────────────────────────────────────
@@ -379,16 +397,34 @@
     $msgInput.style.height = Math.min($msgInput.scrollHeight, 120) + "px";
   });
 
-  $msgInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  $msgInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  // Enter key on join fields
+  ["create-name", "join-name", "join-code"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") id.startsWith("create") ? createRoom() : joinRoom();
+    });
+  });
+
+  // Force uppercase on the join code field
+  document.getElementById("join-code").addEventListener("input", function() {
+    const pos = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(pos, pos);
+  });
+
+  // Announce departure when the tab closes
+  window.addEventListener("beforeunload", () => {
+    if (channel) {
+      channel.postMessage({ type: "leave", name: myName, ts: now() });
+      channel.close();
     }
   });
 
-  document.getElementById("name-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") connect();
-  });
+  // ── init ──────────────────────────────────────────────────────────────────
+  regenerateCode();
 </script>
 </body>
 </html>
