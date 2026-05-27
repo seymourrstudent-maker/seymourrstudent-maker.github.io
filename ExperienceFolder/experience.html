@@ -15,7 +15,7 @@
     .nav-links{display:flex;gap:0.25rem;list-style:none}
     .nav-links a{color:var(--muted);text-decoration:none;font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
     .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}
-    .nav-dropdown{position:relative}
+    .nav-dropdown{position:relative}.nav-dropdown::after{content:'';position:absolute;left:0;bottom:-8px;width:100%;height:8px}
     .nav-dropdown>span{color:var(--muted);font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;cursor:pointer;transition:color 0.2s,background 0.2s;display:flex;align-items:center;gap:0.3rem}
     .nav-dropdown:hover>span{color:var(--text);background:var(--surface2)}
     .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem;min-width:140px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 0.2s,transform 0.2s}
