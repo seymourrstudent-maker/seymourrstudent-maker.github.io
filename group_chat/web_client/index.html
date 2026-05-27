@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Group Chat | Rapheal Seymour</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;
+      --accent:#5bf5c2;--accent2:#7c6dfa;--accent3:#f5a05b;
+      --text:#e8eaf0;--muted:#6b7280;--nav-h:64px;
+      --green:#3ecf8e;--yellow:#f0b429;--red:#f66;
+      --font-mono:'JetBrains Mono','DM Mono',monospace;--radius:10px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;overflow:hidden;display:flex;flex-direction:column}
+
+    /* ── site nav ── */
+    nav{height:var(--nav-h);background:rgba(13,15,20,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;z-index:100;flex-shrink:0}
+    .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);text-decoration:none;letter-spacing:-0.02em}
+    .nav-links{display:flex;gap:0.25rem;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}
+    .nav-dropdown{position:relative}.nav-dropdown::after{content:'';position:absolute;left:0;bottom:-8px;width:100%;height:8px}
+    .nav-dropdown>span{color:var(--muted);font-size:0.75rem;font-weight:400;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.75rem;border-radius:4px;cursor:pointer;transition:color 0.2s,background 0.2s;display:flex;align-items:center;gap:0.3rem}
+    .nav-dropdown:hover>span{color:var(--text);background:var(--surface2)}
+    .dropdown-menu{position:absolute;top:calc(100% + 8px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem;min-width:140px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 0.2s,transform 0.2s}
+    .nav-dropdown:hover .dropdown-menu{opacity:1;pointer-events:all;transform:translateY(0)}
+    .dropdown-menu a{display:block;color:var(--muted);text-decoration:none;font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;padding:0.45rem 0.75rem;border-radius:4px;transition:color 0.2s,background 0.2s}
+    .dropdown-menu a:hover{color:var(--text);background:var(--surface2)}
+
+    /* ── chat app shell ── */
+    .app{flex:1;display:grid;grid-template-rows:auto 1fr auto;max-width:860px;width:100%;margin:0 auto;padding:0 16px;overflow:hidden}
+
+    /* ── chat header ── */
+    .chat-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0}
+    .chat-logo{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;color:var(--accent)}
+    .status-pill{display:flex;align-items:center;gap:7px;font-size:.75rem;font-family:var(--font-mono);color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:5px 12px;border-radius:999px;transition:color .3s}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+    .status-pill.connected{color:var(--green)}.status-pill.connected .status-dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+    .status-pill.error{color:var(--red)}.status-pill.error .status-dot{background:var(--red)}
+
+    /* ── toolbar ── */
+    #toolbar{display:none;padding:8px 0 6px;gap:8px;flex-wrap:wrap}
+    #toolbar.active{display:flex}
+    .btn-sm{padding:7px 14px;font-size:.78rem;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius);cursor:pointer;font-family:'DM Mono',monospace;transition:color .2s,border-color .2s}
+    .btn-sm:hover{color:var(--text);border-color:var(--accent)}
+
+    /* ── connect panel ── */
+    #connect-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 24px;animation:fadeUp .4s ease;overflow-y:auto}
+    #connect-panel h2{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em;color:var(--accent)}
+    .field-row{display:flex;gap:10px;width:100%;max-width:440px;flex-wrap:wrap}
+    .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:120px}
+    .field label{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .field input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;font-family:var(--font-mono);font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s}
+    .field input:focus{border-color:var(--accent)}
+    .btn-primary{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:var(--bg);width:100%;max-width:440px;padding:13px;border-radius:var(--radius);border:none;font-family:'DM Mono',monospace;font-size:.82rem;font-weight:500;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:filter .15s,transform .1s}
+    .btn-primary:hover{filter:brightness(1.1)}
+    .btn-primary:active{transform:scale(.97)}
+
+    /* ── setup accordion ── */
+    .setup-box{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .setup-toggle{width:100%;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:color .2s}
+    .setup-toggle:hover{color:var(--text)}
+    .setup-body{display:none;padding:0 14px 14px;border-top:1px solid var(--border)}
+    .setup-body.open{display:block}
+    .setup-body ol{padding-left:1.1rem;margin-top:10px;display:flex;flex-direction:column;gap:8px}
+    .setup-body li{font-size:.78rem;color:var(--muted);line-height:1.6}
+    .setup-body code{color:var(--accent);font-family:var(--font-mono);font-size:.75rem}
+
+    /* ── messages ── */
+    #chat-area{display:none;flex-direction:column;overflow:hidden}
+    #chat-area.active{display:flex}
+    #messages{flex:1;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:2px;scroll-behavior:smooth}
+    #messages::-webkit-scrollbar{width:4px}
+    #messages::-webkit-scrollbar-track{background:transparent}
+    #messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    .msg{display:flex;gap:10px;padding:5px 8px;border-radius:8px;animation:fadeUp .18s ease;line-height:1.55}
+    .msg:hover{background:var(--surface)}
+    .msg-ts{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);flex-shrink:0;padding-top:3px}
+    .msg-body{flex:1;min-width:0}
+    .msg-author{font-weight:600;font-size:.82rem;margin-bottom:2px}
+    .msg-text{font-size:.9rem;word-break:break-word}
+    .msg.system .msg-text{color:var(--muted);font-style:italic;font-size:.82rem}
+    .msg.system .msg-author{display:none}
+    .msg.join .msg-text{color:var(--green)}
+    .msg.leave .msg-text{color:var(--yellow)}
+    .msg.server .msg-text{color:var(--accent)}
+    .msg.own .msg-author{color:var(--accent)}
+    .uc-0{color:#f472b6}.uc-1{color:#fb923c}.uc-2{color:#34d399}.uc-3{color:#a78bfa}
+    .uc-4{color:#38bdf8}.uc-5{color:#fbbf24}.uc-6{color:#e879f9}.uc-7{color:#4ade80}
+
+    /* ── input bar ── */
+    #input-bar{display:flex;gap:10px;padding:14px 0 20px;border-top:1px solid var(--border);align-items:flex-end;flex-shrink:0}
+    #msg-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;font-family:'DM Mono',monospace;font-size:.9rem;color:var(--text);outline:none;resize:none;max-height:120px;line-height:1.5;transition:border-color .2s}
+    #msg-input:focus{border-color:var(--accent)}
+    #msg-input::placeholder{color:var(--muted)}
+    #send-btn{background:var(--accent);border:none;border-radius:var(--radius);width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:filter .15s,transform .1s;color:var(--bg)}
+    #send-btn:hover{filter:brightness(1.1)}
+    #send-btn:active{transform:scale(.94)}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:768px){.nav-links{display:none}}
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="../../HomeFolder/index.html">Rapheal Seymour</a>
+    <ul class="nav-links">
+      <li><a href="../../HomeFolder/index.html">Home</a></li>
+      <li><a href="../../AboutFolder/about.html">About</a></li>
+      <li><a href="../../ExperienceFolder/experience.html">Experience</a></li>
+      <li><div class="nav-dropdown"><span>College ▾</span><div class="dropdown-menu"><a href="../../CollegeFolder/college.html">Overview</a><a href="../../CollegeFolder/college-school.html">School Projects</a><a href="../../CollegeFolder/college-personal.html">Personal Projects</a></div></div></li>
+      <li><div class="nav-dropdown"><span>Work ▾</span><div class="dropdown-menu"><a href="../../WorkFolder/work.html">Overview</a><a href="../../WorkFolder/work-broadcast.html">Broadcast</a><a href="../../WorkFolder/work-projects.html">Projects</a></div></div></li>
+      <li><a href="../../ActivitiesFolder/activities.html">Activities</a></li>
+      <li><a href="../../ContactFolder/contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="app">
+
+    <!-- Chat header -->
+    <div class="chat-header">
+      <span class="chat-logo">Group Chat</span>
+      <div id="status" class="status-pill">
+        <span class="status-dot"></span>
+        <span id="status-text">disconnected</span>
+      </div>
+      <div id="toolbar">
+        <button class="btn-sm" onclick="sendCmd('/list')">👥 who's online</button>
+        <button class="btn-sm" onclick="sendCmd('/help')">❓ help</button>
+        <button class="btn-sm" onclick="disconnect()">⏻ leave</button>
+      </div>
+    </div>
+
+    <!-- Connect panel -->
+    <div id="connect-panel">
+      <h2>Join the Chat</h2>
+      <div class="field-row">
+        <div class="field" style="flex:2">
+          <label>Bridge host</label>
+          <input id="ws-host" type="text" value="localhost" placeholder="localhost" />
+        </div>
+        <div class="field" style="flex:1">
+          <label>Port</label>
+          <input id="ws-port" type="number" value="8765" placeholder="8765" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Your name</label>
+          <input id="name-input" type="text" placeholder="e.g. Alice" maxlength="24" />
+        </div>
+      </div>
+      <button class="btn-primary" onclick="connect()">Connect →</button>
+      <div class="setup-box">
+        <button class="setup-toggle" onclick="toggleSetup(this)">
+          <span>Setup instructions</span><span id="setup-arrow">▾</span>
+        </button>
+        <div class="setup-body">
+          <ol>
+            <li>Install the bridge dependency:<br/><code>pip install websockets</code></li>
+            <li>Start the TCP server:<br/><code>python server/server.py</code></li>
+            <li>Start the WebSocket bridge:<br/><code>python web_client/ws_bridge.py</code></li>
+            <li>Enter your name above and click <strong>Connect</strong>.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div id="chat-area">
+      <div id="messages"></div>
+      <div id="input-bar">
+        <textarea id="msg-input" rows="1" placeholder="Message… (Enter to send, Shift+Enter for newline)"></textarea>
+        <button id="send-btn" onclick="sendMessage()" title="Send">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  // ── setup accordion ───────────────────────────────────────────────────────
+  function toggleSetup(btn) {
+    const body  = btn.nextElementSibling;
+    const arrow = document.getElementById("setup-arrow");
+    body.classList.toggle("open");
+    arrow.textContent = body.classList.contains("open") ? "▴" : "▾";
+  }
+
+  // ── state ──────────────────────────────────────────────────────────────────
+  let ws = null;
+  let myName = "";
+  let nameAcked = false;
+  let userColors = {};
+  let colorIdx = 0;
+
+  const COLOR_CLASSES = ["uc-0","uc-1","uc-2","uc-3","uc-4","uc-5","uc-6","uc-7"];
+
+  function colorFor(name) {
+    if (name === myName) return "";
+    if (!userColors[name]) userColors[name] = COLOR_CLASSES[colorIdx++ % COLOR_CLASSES.length];
+    return userColors[name];
+  }
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const $messages     = document.getElementById("messages");
+  const $msgInput     = document.getElementById("msg-input");
+  const $status       = document.getElementById("status");
+  const $statusText   = document.getElementById("status-text");
+  const $connectPanel = document.getElementById("connect-panel");
+  const $chatArea     = document.getElementById("chat-area");
+  const $toolbar      = document.getElementById("toolbar");
+
+  function setStatus(label, cls) {
+    $statusText.textContent = label;
+    $status.className = "status-pill " + (cls || "");
+  }
+
+  function showChat() {
+    $connectPanel.style.display = "none";
+    $chatArea.classList.add("active");
+    $toolbar.classList.add("active");
+    $msgInput.focus();
+  }
+
+  function showConnect() {
+    $connectPanel.style.display = "flex";
+    $chatArea.classList.remove("active");
+    $toolbar.classList.remove("active");
+  }
+
+  function scrollToBottom() {
+    $messages.scrollTop = $messages.scrollHeight;
+  }
+
+  function addMessage({ ts, author, text, type }) {
+    const el = document.createElement("div");
+    el.className = "msg " + (type || "");
+
+    const tsEl = document.createElement("span");
+    tsEl.className = "msg-ts";
+    tsEl.textContent = ts || "";
+
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "msg-body";
+
+    if (author) {
+      const authorEl = document.createElement("div");
+      authorEl.className = "msg-author " + (author === myName ? "" : colorFor(author));
+      authorEl.textContent = author;
+      bodyEl.appendChild(authorEl);
+    }
+
+    const textEl = document.createElement("div");
+    textEl.className = "msg-text";
+    textEl.textContent = text;
+    bodyEl.appendChild(textEl);
+
+    el.appendChild(tsEl);
+    el.appendChild(bodyEl);
+    $messages.appendChild(el);
+    scrollToBottom();
+  }
+
+  // ── parse server messages ─────────────────────────────────────────────────
+  function parseAndRender(raw) {
+    const lines = raw.split("\n");
+    for (const line of lines) {
+      if (!line.trim()) continue;
+
+      if (line.startsWith("Enter your name:")) continue;
+      if (line.startsWith("Welcome")) {
+        addMessage({ ts: now(), text: line, type: "server" }); continue;
+      }
+
+      const tsMatch = line.match(/^\[(\d{2}:\d{2}:\d{2})\]\s+(.*)/s);
+      if (!tsMatch) {
+        addMessage({ ts: now(), text: line, type: "system" }); continue;
+      }
+      const ts   = tsMatch[1];
+      const body = tsMatch[2].trim();
+
+      if (body.startsWith("***")) {
+        const lower = body.toLowerCase();
+        const type  = lower.includes("joined") ? "join" : lower.includes("left") ? "leave" : "system";
+        addMessage({ ts, text: body.replace(/\*{3}/g, "").trim(), type }); continue;
+      }
+
+      if (!body.includes(":") || body.startsWith("Online") || body.startsWith("Commands")) {
+        addMessage({ ts, text: body, type: "server" }); continue;
+      }
+
+      const colonIdx = body.indexOf(":");
+      const author   = body.slice(0, colonIdx).trim();
+      const text     = body.slice(colonIdx + 1).trim();
+      const type     = author === myName ? "own" : "";
+      addMessage({ ts, author, text, type });
+    }
+  }
+
+  function now() {
+    return new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+
+  // ── connect / disconnect ──────────────────────────────────────────────────
+  function connect() {
+    const host = document.getElementById("ws-host").value.trim() || "localhost";
+    const port = document.getElementById("ws-port").value.trim() || "8765";
+    myName     = document.getElementById("name-input").value.trim();
+    nameAcked  = false;
+
+    if (!myName) { alert("Please enter a name."); return; }
+
+    const url = `ws://${host}:${port}`;
+    setStatus("connecting…", "");
+
+    try { ws = new WebSocket(url); }
+    catch(e) { setStatus("error", "error"); return; }
+
+    ws.onopen = () => {
+      setStatus(`connected as ${myName}`, "connected");
+      showChat();
+      addMessage({ ts: now(), text: `Connected to ${url}`, type: "server" });
+    };
+
+    ws.onmessage = (ev) => {
+      const text = ev.data;
+      if (!nameAcked && text.includes("Enter your name:")) {
+        ws.send(myName);
+        nameAcked = true;
+        return;
+      }
+      parseAndRender(text);
+    };
+
+    ws.onerror = () => {
+      setStatus("connection error", "error");
+      addMessage({ ts: now(), text: `Could not connect to ${url}. Is ws_bridge.py running?`, type: "leave" });
+    };
+
+    ws.onclose = () => {
+      setStatus("disconnected", "");
+      addMessage({ ts: now(), text: "Disconnected from server.", type: "leave" });
+      showConnect();
+    };
+  }
+
+  function disconnect() {
+    if (ws) { ws.send("/quit"); ws.close(); ws = null; }
+    showConnect();
+    setStatus("disconnected", "");
+  }
+
+  // ── sending ───────────────────────────────────────────────────────────────
+  function sendMessage() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const text = $msgInput.value.trim();
+    if (!text) return;
+    ws.send(text);
+    $msgInput.value = "";
+    $msgInput.style.height = "auto";
+  }
+
+  function sendCmd(cmd) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(cmd);
+  }
+
+  // ── textarea auto-resize + Enter key ─────────────────────────────────────
+  $msgInput.addEventListener("input", () => {
+    $msgInput.style.height = "auto";
+    $msgInput.style.height = Math.min($msgInput.scrollHeight, 120) + "px";
+  });
+
+  $msgInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  document.getElementById("name-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") connect();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Only needed for the optional web client bridge.
+# The terminal server and client use Python's standard library only.
+websockets>=12.0

@@ -44,6 +44,8 @@
     .project-bullets li::before{content:'—';position:absolute;left:0;color:var(--accent)}
     .project-langs{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:1rem}
     .lang-tag{font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+    .project-launch{display:inline-flex;align-items:center;gap:0.4rem;margin-top:1rem;padding:0.4rem 0.9rem;border-radius:6px;background:var(--accent);color:var(--bg);font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;text-decoration:none;transition:filter 0.15s,transform 0.1s}
+    .project-launch:hover{filter:brightness(1.1);transform:translateY(-1px)}
     .ta-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;padding:1.5rem}
     .ta-card .role{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:0.25rem}
     .ta-card .course-name{font-size:0.8rem;color:var(--accent2);margin-bottom:0.75rem}
@@ -80,6 +82,10 @@
     <p class="section-label">Projects</p>
     <h2 class="section-title">School-built work</h2>
     <div class="projects-list">
+      <div class="project-card">
+        <div><div class="project-tag">Networking / Systems</div><div class="project-title">Multithreaded TCP Group Chat</div><ul class="project-bullets"><li>Built a TCP group-chat server in Python handling multiple simultaneous clients via one thread per connection, with a shared broadcast list protected by a threading lock</li><li>Implemented a terminal client with ANSI color support and a WebSocket-to-TCP bridge allowing a browser-based UI to connect to the same server</li><li>Designed chat commands (/list, /who, /quit) and automatic name-uniqueness enforcement for clients joining mid-session</li><li>Deployable across real machines on a network — architecture: Browser → ws_bridge.py → TCP server ← terminal clients</li></ul><div class="project-langs"><span class="lang-tag">Python</span><span class="lang-tag">TCP Sockets</span><span class="lang-tag">Multithreading</span><span class="lang-tag">WebSockets</span></div><a class="project-launch" href="../group_chat/web_client/index.html">Launch Chat →</a></div>
+        <div class="project-period">Spring 2026</div>
+      </div>
       <div class="project-card">
         <div><div class="project-tag">Robotics / Systems</div><div class="project-title">Autonomous Multi-Drone Coordination System</div><ul class="project-bullets"><li>Developed coordinate transformation pipelines converting SVG-based visual designs into executable 3D drone trajectories</li><li>Implemented drone localization algorithms using trilateration and linear algebra for real-time positional computation</li></ul><div class="project-langs"><span class="lang-tag">C++</span><span class="lang-tag">Eigen</span><span class="lang-tag">Linear Algebra</span></div></div>
         <div class="project-period">Aug 2025 – Jan 2026</div>
