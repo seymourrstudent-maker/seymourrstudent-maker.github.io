@@ -1,4 +1,4 @@
 # Hello Viewer!
-## Welcome to my personal github.io
+## Welcome to my Github.io Portfolio
 
-Updates to this github will be every 2-3 months, starting in May of 2026.
+Updates to this github will be every 2-3 months
