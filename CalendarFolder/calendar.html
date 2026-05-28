@@ -172,8 +172,11 @@
       <div class="modal-body">
         <div class="field"><label>Title</label><input id="ev-title" type="text" placeholder="e.g. CS1570 Lab" /></div>
         <div class="row-2">
-          <div class="field"><label>Start</label><input id="ev-start" type="datetime-local" /></div>
-          <div class="field"><label>End</label><input id="ev-end" type="datetime-local" /></div>
+          <div class="field"><label>Start</label><input id="ev-start" type="datetime-local" oninput="checkDateOrder()" /></div>
+          <div class="field"><label>End</label><input id="ev-end" type="datetime-local" oninput="checkDateOrder()" /></div>
+        </div>
+        <div id="date-warn" style="display:none;font-size:.72rem;color:#f5a05b;background:rgba(245,160,91,0.08);border:1px solid rgba(245,160,91,0.3);border-radius:6px;padding:8px 12px;line-height:1.5">
+          ⚠ End is before Start — double-check your dates before saving.
         </div>
         <div class="field"><label>Location</label><input id="ev-loc" type="text" placeholder="e.g. Toomey Hall 127" /></div>
         <div class="field"><label>Description</label><textarea id="ev-desc" rows="2" placeholder="Optional notes…"></textarea></div>
@@ -361,6 +364,13 @@ function loadEvents(info, successCb, failureCb) {
 }
 
 // ── Event CRUD ─────────────────────────────────────────────────────────────
+function checkDateOrder() {
+  const start = document.getElementById('ev-start').value;
+  const end   = document.getElementById('ev-end').value;
+  const warn  = document.getElementById('date-warn');
+  warn.style.display = (start && end && new Date(end) < new Date(start)) ? 'block' : 'none';
+}
+
 function saveEvent() {
   const title = document.getElementById('ev-title').value.trim();
   const start = document.getElementById('ev-start').value;
@@ -371,6 +381,11 @@ function saveEvent() {
   const color = document.getElementById('ev-color').value;
 
   if (!title || !start) { alert('Title and Start are required.'); return; }
+
+  if (end && new Date(end) < new Date(start)) {
+    const ok = confirm('Your end time is before your start time.\n\nAre you sure you want to save the event this way?');
+    if (!ok) return;
+  }
 
   const ev = { id: genId(), title, start, end: end || null, description: desc, location: loc, color };
   if (recur !== 'NONE') {
@@ -487,7 +502,7 @@ function icsDateToISO(val) {
 
 // ── Modal helpers ──────────────────────────────────────────────────────────
 function openEventModal()  { document.getElementById('event-modal').classList.add('open'); }
-function closeEventModal() { document.getElementById('event-modal').classList.remove('open'); }
+function closeEventModal() { document.getElementById('event-modal').classList.remove('open'); document.getElementById('date-warn').style.display='none'; }
 function openCanvasModal() { document.getElementById('canvas-status').textContent = ''; document.getElementById('canvas-modal').classList.add('open'); }
 function closeCanvasModal(){ document.getElementById('canvas-modal').classList.remove('open'); }
 
