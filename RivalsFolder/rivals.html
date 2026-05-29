@@ -632,11 +632,11 @@ function teamRows(players, team){
       <td><input class="wi stat-in" type="text" inputmode="numeric" value="${v('blk')}" /></td>
       <td><input class="wi stat-in" type="text" inputmode="numeric" value="${v('heal')}" /></td>
       <td><input class="ni stat-in acc-in" type="text" inputmode="numeric" value="${v('acc')}" /></td>
-      <td><select class="as">
-        <option value="">None</option>
-        <option value="MVP">MVP</option>
-        <option value="SVP">SVP</option>
-      </select></td>
+      <td><select class="as" onchange="updateAwardOptions()">${
+        team===1
+          ? '<option value="">None</option><option value="MVP">MVP</option>'
+          : '<option value="">None</option><option value="SVP">SVP</option>'
+      }</select></td>
     </tr>`;
   }).join('');
 }
@@ -673,12 +673,23 @@ function saveMatch(){
   const date  = document.getElementById('f-date').value;
   const mode  = document.getElementById('f-mode').value;
   const map   = document.getElementById('f-map').value;
-  const t1n   = document.getElementById('f-t1n').value.trim() || 'Team 1';
-  const t2n   = document.getElementById('f-t2n').value.trim() || 'Team 2';
+  const t1n   = document.getElementById('f-t1n').value.trim();
+  const t2n   = document.getElementById('f-t2n').value.trim();
   const t1s   = parseInt(document.getElementById('f-t1s').value)||0;
   const t2s   = parseInt(document.getElementById('f-t2s').value)||0;
 
   if(!mode || !map){ toast('Please select a game mode and map','err'); return; }
+  if(!date){ toast('Please enter the match date','err'); return; }
+  if(!t1n || !t2n){ toast('Both team names are required','err'); return; }
+
+  // Duplicate name check (case-insensitive across both teams)
+  const nameInputs = [...document.querySelectorAll('#t1-rows .pi, #t2-rows .pi')]
+    .map(i=>i.value.trim().toLowerCase()).filter(n=>n);
+  const seen = new Set();
+  for(const n of nameInputs){
+    if(seen.has(n)){ toast(`Duplicate player name — each player must be unique`,'err'); return; }
+    seen.add(n);
+  }
 
   // Count named players per side
   const countNames = id => [...document.querySelectorAll(`#${id} tr`)]
@@ -898,6 +909,22 @@ function updateMapList(){
   wrap.style.display='';
   sel.innerHTML = '<option value="">Select map…</option>' +
     (MAP_DATA[mode]||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+
+// ── Award Exclusivity ──────────────────────────────────────────────────────
+// One MVP allowed on the Victory side; one SVP allowed on the Defeat side.
+// When claimed, that option is disabled for every other player on the same side.
+function updateAwardOptions(){
+  const enforce = (tbodyId, awardVal)=>{
+    const selects = [...document.querySelectorAll(`#${tbodyId} .as`)];
+    const claimed = selects.some(s=>s.value===awardVal);
+    selects.forEach(s=>{
+      const opt = s.querySelector(`option[value="${awardVal}"]`);
+      if(opt) opt.disabled = claimed && s.value!==awardVal;
+    });
+  };
+  enforce('t1-rows','MVP');
+  enforce('t2-rows','SVP');
 }
 
 // ── Input Guards ───────────────────────────────────────────────────────────
