@@ -243,7 +243,17 @@
             <div class="meta-grid">
               <div class="field"><label>Day #</label><input id="f-day" type="number" min="1" value="1" /></div>
               <div class="field"><label>Date</label><input id="f-date" type="date" /></div>
-              <div class="field span2"><label>Map</label><input id="f-map" type="text" placeholder="e.g. K'UN-LUN — Heart of Heaven" /></div>
+              <div class="field"><label>Game Mode</label>
+                <select id="f-mode" onchange="updateMapList()">
+                  <option value="">Select mode…</option>
+                  <option value="Convergence">Convergence</option>
+                  <option value="Convoy">Convoy</option>
+                  <option value="Domination">Domination</option>
+                </select>
+              </div>
+              <div class="field" id="map-wrap" style="display:none;grid-column:1/-1"><label>Map</label>
+                <select id="f-map"><option value="">Select map…</option></select>
+              </div>
             </div>
 
             <!-- Victory team -->
@@ -254,7 +264,7 @@
             </div>
             <div class="ptable-wrap">
               <table class="ptable"><thead><tr>
-                <th>Name</th><th>Role</th><th>K</th><th>A</th><th>D</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>Award</th>
+                <th>Name</th><th>Role</th><th>K</th><th>D</th><th>A</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>Award</th>
               </tr></thead><tbody id="t1-rows"></tbody></table>
             </div>
 
@@ -266,10 +276,13 @@
             </div>
             <div class="ptable-wrap">
               <table class="ptable"><thead><tr>
-                <th>Name</th><th>Role</th><th>K</th><th>A</th><th>D</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>Award</th>
+                <th>Name</th><th>Role</th><th>K</th><th>D</th><th>A</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>Award</th>
               </tr></thead><tbody id="t2-rows"></tbody></table>
             </div>
 
+            <div id="player-warn" style="display:none;font-size:.72rem;color:#f66;background:rgba(246,102,102,0.08);border:1px solid rgba(246,102,102,0.3);border-radius:6px;padding:8px 12px;line-height:1.5;margin-top:.75rem">
+              ⚠ Missing Players — both teams require 6 player names before saving.
+            </div>
             <div class="form-actions">
               <button class="btn btn-outline" onclick="resetUpload()">Cancel</button>
               <button class="btn btn-primary" onclick="saveMatch()">Save Match →</button>
@@ -298,8 +311,8 @@
               <th onclick="sortLB('l')">L</th>
               <th onclick="sortLB('wr')">W%</th>
               <th onclick="sortLB('k')">K</th>
-              <th onclick="sortLB('a')">A</th>
               <th onclick="sortLB('d')">D</th>
+              <th onclick="sortLB('a')">A</th>
               <th onclick="sortLB('kda')">KDA</th>
               <th onclick="sortLB('dmg')">Avg DMG</th>
               <th onclick="sortLB('heal')">Avg Heal</th>
@@ -377,6 +390,10 @@ function resetUpload(){
   document.getElementById('st-upload').style.display='';
   document.getElementById('st-proc').style.display='none';
   document.getElementById('st-review').style.display='none';
+  document.getElementById('f-mode').value='';
+  document.getElementById('map-wrap').style.display='none';
+  document.getElementById('f-map').innerHTML='<option value="">Select map…</option>';
+  document.getElementById('player-warn').style.display='none';
   fileIn.value='';
 }
 
@@ -576,8 +593,8 @@ function parsePlayerLine(line){
   const head = nums.slice(0, nums.length - 5);
   // Take last 3 from head as k, a, d (if medal exists it'll be at head[-1] and shift others left)
   // This means d may be wrong if a medal count is present — user should verify
-  const d = head[head.length - 1] ?? 0;
-  const a = head[head.length - 2] ?? 0;
+  const a = head[head.length - 1] ?? 0;
+  const d = head[head.length - 2] ?? 0;
   const k = head[head.length - 3] ?? 0;
 
   // Infer role from stats
@@ -587,8 +604,7 @@ function parsePlayerLine(line){
 }
 
 // ── Review Form Population ─────────────────────────────────────────────────
-function populateForm({ map, t1Players, t2Players }){
-  document.getElementById('f-map').value = map || '';
+function populateForm({ t1Players, t2Players }){
   document.getElementById('t1-rows').innerHTML = teamRows(t1Players, 1);
   document.getElementById('t2-rows').innerHTML = teamRows(t2Players, 2);
 }
@@ -598,7 +614,8 @@ function teamRows(players, team){
   return Array.from({length:6}, (_,i)=>{
     const p = players[i] || {};
     const n = esc(p.name||'');
-    const role = p.role||'D';
+    const DEFAULT_ROLES = ['D','D','S','S','V','V'];
+    const role = p.role || DEFAULT_ROLES[i];
     const v = f => p[f] !== undefined ? p[f] : '';
     return `<tr>
       <td><input class="pi" type="text" value="${n}" placeholder="Player name" /></td>
@@ -607,14 +624,14 @@ function teamRows(players, team){
         <option value="S"${role==='S'?' selected':''}>Strategist</option>
         <option value="V"${role==='V'?' selected':''}>Vanguard</option>
       </select></td>
-      <td><input class="ni" type="text" inputmode="numeric" value="${v('k')}" /></td>
-      <td><input class="ni" type="text" inputmode="numeric" value="${v('a')}" /></td>
-      <td><input class="ni" type="text" inputmode="numeric" value="${v('d')}" /></td>
-      <td><input class="ni" type="text" inputmode="numeric" value="${v('fh')}" /></td>
-      <td><input class="wi" type="text" inputmode="numeric" value="${v('dmg')}" /></td>
-      <td><input class="wi" type="text" inputmode="numeric" value="${v('blk')}" /></td>
-      <td><input class="wi" type="text" inputmode="numeric" value="${v('heal')}" /></td>
-      <td><input class="ni" type="text" inputmode="numeric" value="${v('acc')}" /></td>
+      <td><input class="ni stat-in" type="text" inputmode="numeric" value="${v('k')}" /></td>
+      <td><input class="ni stat-in" type="text" inputmode="numeric" value="${v('d')}" /></td>
+      <td><input class="ni stat-in" type="text" inputmode="numeric" value="${v('a')}" /></td>
+      <td><input class="ni stat-in" type="text" inputmode="numeric" value="${v('fh')}" /></td>
+      <td><input class="wi stat-in" type="text" inputmode="numeric" value="${v('dmg')}" /></td>
+      <td><input class="wi stat-in" type="text" inputmode="numeric" value="${v('blk')}" /></td>
+      <td><input class="wi stat-in" type="text" inputmode="numeric" value="${v('heal')}" /></td>
+      <td><input class="ni stat-in acc-in" type="text" inputmode="numeric" value="${v('acc')}" /></td>
       <td><select class="as">
         <option value="">None</option>
         <option value="MVP">MVP</option>
@@ -638,8 +655,8 @@ function readRows(tbodyId, team, result){
       team, result,
       role: selects[0].value,
       k:    parseInt(inputs[1].value)||0,
-      a:    parseInt(inputs[2].value)||0,
-      d:    parseInt(inputs[3].value)||0,
+      d:    parseInt(inputs[2].value)||0,
+      a:    parseInt(inputs[3].value)||0,
       fh:   parseInt(inputs[4].value)||0,
       dmg:  parseInt(inputs[5].value)||0,
       blk:  parseInt(inputs[6].value)||0,
@@ -654,13 +671,27 @@ function readRows(tbodyId, team, result){
 function saveMatch(){
   const day   = parseInt(document.getElementById('f-day').value)||1;
   const date  = document.getElementById('f-date').value;
-  const map   = document.getElementById('f-map').value.trim();
+  const mode  = document.getElementById('f-mode').value;
+  const map   = document.getElementById('f-map').value;
   const t1n   = document.getElementById('f-t1n').value.trim() || 'Team 1';
   const t2n   = document.getElementById('f-t2n').value.trim() || 'Team 2';
   const t1s   = parseInt(document.getElementById('f-t1s').value)||0;
   const t2s   = parseInt(document.getElementById('f-t2s').value)||0;
 
-  if(!map){ toast('Please enter the map name','err'); return; }
+  if(!mode || !map){ toast('Please select a game mode and map','err'); return; }
+
+  // Count named players per side
+  const countNames = id => [...document.querySelectorAll(`#${id} tr`)]
+    .filter(r=>r.querySelectorAll('input')[0].value.trim()).length;
+  const t1count = countNames('t1-rows');
+  const t2count = countNames('t2-rows');
+  const warn = document.getElementById('player-warn');
+  if(t1count < 6 || t2count < 6){
+    warn.style.display='';
+    warn.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+  warn.style.display='none';
 
   const t1result = t1s>t2s?'W': t1s<t2s?'L':'T';
   const t2result = t2s>t1s?'W': t2s<t1s?'L':'T';
@@ -670,9 +701,7 @@ function saveMatch(){
     ...readRows('t2-rows', 2, t2result)
   ];
 
-  if(!entries.length){ toast('No player data to save','err'); return; }
-
-  const match = { id:genId(), day, date, map,
+  const match = { id:genId(), day, date, mode, map,
     team1:{name:t1n,score:t1s}, team2:{name:t2n,score:t2s}, entries };
 
   const all = getMatches(); all.push(match); saveMatches(all);
@@ -712,12 +741,12 @@ function matchCard(m){
   const t1w=m.team1.score>m.team2.score, t2w=m.team2.score>m.team1.score;
   const thead=`<table class="rtable"><thead><tr>
     <th style="text-align:left">Player</th><th style="text-align:left">Role</th>
-    <th>K</th><th>A</th><th>D</th><th>FH</th><th>Damage</th><th>Blk</th><th>Heal</th><th>Acc%</th>
+    <th>K</th><th>D</th><th>A</th><th>FH</th><th>Damage</th><th>Blk</th><th>Heal</th><th>Acc%</th>
   </tr></thead><tbody>`;
   const rows=entries=>entries.map(e=>`<tr>
     <td class="pname-cell">${esc(e.player_name)}${e.award==='MVP'?'<span class="mvp-tag">MVP</span>':e.award==='SVP'?'<span class="svp-tag">SVP</span>':''}</td>
     <td><span class="rpill rp${e.role}">${e.role==='D'?'Duelist':e.role==='S'?'Strategist':'Vanguard'}</span></td>
-    <td>${e.k}</td><td>${e.a}</td><td>${e.d}</td><td>${e.fh}</td>
+    <td>${e.k}</td><td>${e.d}</td><td>${e.a}</td><td>${e.fh}</td>
     <td>${e.dmg.toLocaleString()}</td><td>${e.blk.toLocaleString()}</td>
     <td>${e.heal.toLocaleString()}</td><td>${e.acc}%</td>
   </tr>`).join('');
@@ -833,13 +862,61 @@ function renderLB(){
       <td><span class="rank ${rc}">#${i+1}</span><span class="lb-pname">${esc(s.name)}</span>${awards}</td>
       <td>${s.gp}</td><td class="wr-g">${s.w}</td><td style="color:#f66">${s.l}</td>
       <td class="${parseFloat(wr)>=55?'wr-g':''}">${wr}%</td>
-      <td>${s.k}</td><td>${s.a}</td><td>${s.d}</td>
+      <td>${s.k}</td><td>${s.d}</td><td>${s.a}</td>
       <td class="${kc}">${kda}</td>
       <td>${adm}</td><td>${ahl}</td><td>${abl}</td><td>${aac}%</td>
       <td>${roles||'—'}</td>
     </tr>`;
   }).join('');
 }
+
+// ── Map Data ───────────────────────────────────────────────────────────────
+const MAP_DATA = {
+  Convergence: [
+    "K'UN-LUN: Heart of Heaven",
+    "Midtown",
+    "Intergalactic Empire of Wakanda: Hall of Djalia"
+  ],
+  Convoy: [
+    "Yggsgard: Royal Palace",
+    "Birnin T'Challa: Vibranium Mound",
+    "Tokyo 2099: Shin-Ra Building"
+  ],
+  Domination: [
+    "Yggsgard: Royal Palace",
+    "Birnin T'Challa: Vibranium Mound",
+    "Tokyo 2099: Shin-Ra Building",
+    "Throne of Darkness"
+  ]
+};
+
+function updateMapList(){
+  const mode = document.getElementById('f-mode').value;
+  const wrap = document.getElementById('map-wrap');
+  const sel  = document.getElementById('f-map');
+  if(!mode){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  sel.innerHTML = '<option value="">Select map…</option>' +
+    (MAP_DATA[mode]||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+
+// ── Input Guards ───────────────────────────────────────────────────────────
+// Numeric-only for stat fields: block any key that isn't a digit or navigation
+document.addEventListener('keydown', e=>{
+  if(!e.target.classList.contains('stat-in')) return;
+  const nav = ['Backspace','Delete','Tab','Escape','Enter',
+                'ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+  if(nav.includes(e.key) || e.ctrlKey || e.metaKey) return;
+  if(!/^\d$/.test(e.key)) e.preventDefault();
+});
+
+// Clamp accuracy to 0–100 on change
+document.addEventListener('input', e=>{
+  if(!e.target.classList.contains('acc-in')) return;
+  const raw = parseInt(e.target.value);
+  if(!isNaN(raw) && raw > 100) e.target.value = '100';
+  if(!isNaN(raw) && raw < 0)   e.target.value = '0';
+});
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 updateStats();
