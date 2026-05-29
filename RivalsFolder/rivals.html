@@ -218,7 +218,7 @@
           <div class="dz-text">Drop a match screenshot here</div>
           <div class="dz-sub">or <span class="dz-browse">click to browse</span></div>
         </div>
-        <input type="file" id="file-in" accept="image/*" hidden />
+        <input type="file" id="file-in" accept=".png,.jpg,.jpeg" hidden />
       </div>
 
       <!-- State 2: Processing -->
@@ -359,10 +359,22 @@ function showTab(name){
 const dropZone = document.getElementById('drop-zone');
 const fileIn   = document.getElementById('file-in');
 
+const ALLOWED = ['image/png','image/jpeg'];
+function checkType(f){ return f && ALLOWED.includes(f.type); }
+
 dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e=>{ e.preventDefault(); dropZone.classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) processFile(f); });
-fileIn.addEventListener('change', ()=>{ if(fileIn.files[0]) processFile(fileIn.files[0]); });
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(!checkType(f)){ toast('Only .png and .jpg files are accepted','err'); return; }
+  processFile(f);
+});
+fileIn.addEventListener('change', ()=>{
+  const f=fileIn.files[0];
+  if(!checkType(f)){ toast('Only .png and .jpg files are accepted','err'); fileIn.value=''; return; }
+  processFile(f);
+});
 
 function resetUpload(){
   document.getElementById('st-upload').style.display='';
@@ -371,41 +383,97 @@ function resetUpload(){
   fileIn.value='';
 }
 
+// ── Image Preprocessing ─────────────────────────────────────────────────────
+/*
+  Converts the screenshot to a high-contrast black-and-white image scaled 2×.
+  Detects dark vs light background by sampling the top-left corner:
+    Dark bg (screenshot style 1): white text on dark — keep bright pixels as white.
+    Light bg (screenshot style 2): dark text on light — keep dark pixels as black.
+  Binary threshold removes colored UI noise, leaving clean text for Tesseract.
+*/
+function preprocessForOCR(file){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      const SCALE = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width  = img.width  * SCALE;
+      canvas.height = img.height * SCALE;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const idata = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = idata.data;
+
+      // Sample top-left 8% × 8% to detect background tone
+      const sw = Math.floor(canvas.width  * 0.08);
+      const sh = Math.floor(canvas.height * 0.08);
+      let sum = 0, n = 0;
+      for(let y=0; y<sh; y++) for(let x=0; x<sw; x++){
+        const i=(y*canvas.width+x)*4;
+        sum += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        n++;
+      }
+      const isDark = (sum/n) < 100; // avg brightness of corner < 100 → dark background
+
+      // Binary threshold: isolate text pixels
+      for(let i=0; i<d.length; i+=4){
+        const gray = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+        // Dark bg: text is white (gray > 160 → white, else black)
+        // Light bg: text is dark (gray < 120 → black, else white)
+        const v = isDark ? (gray > 160 ? 255 : 0) : (gray < 120 ? 0 : 255);
+        d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+      }
+      ctx.putImageData(idata, 0, 0);
+      canvas.toBlob(resolve, 'image/png');
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 // ── OCR Pipeline ───────────────────────────────────────────────────────────
 async function processFile(file){
-  // Show screenshot preview immediately
+  // Show original screenshot as preview
   const url = URL.createObjectURL(file);
   document.getElementById('ss-img').src = url;
-
-  // Switch to processing state
   document.getElementById('st-upload').style.display='none';
   document.getElementById('st-proc').style.display='';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('proc-msg').textContent='Preprocessing image…';
 
   try {
+    const processedBlob = await preprocessForOCR(file);
+    document.getElementById('proc-msg').textContent='Starting OCR engine…';
+
     const worker = await Tesseract.createWorker('eng', 1, {
-      logger: m => {
+      logger: m=>{
         if(m.status==='recognizing text'){
-          document.getElementById('prog-fill').style.width = Math.round(m.progress*100)+'%';
-          document.getElementById('proc-msg').textContent = Math.round(m.progress*100)+'% — reading text…';
-        } else {
-          document.getElementById('proc-msg').textContent = m.status+'…';
+          document.getElementById('prog-fill').style.width=Math.round(m.progress*100)+'%';
+          document.getElementById('proc-msg').textContent=Math.round(m.progress*100)+'% complete…';
+        } else if(m.status){
+          document.getElementById('proc-msg').textContent=m.status+'…';
         }
       }
     });
-    const { data: { text } } = await worker.recognize(file);
+
+    // preserve_interword_spaces keeps column spacing intact for number parsing
+    await worker.setParameters({ preserve_interword_spaces: '1' });
+    const { data } = await worker.recognize(processedBlob);
     await worker.terminate();
 
-    const parsed = parseScreenshot(text);
+    const parsed = parseScreenshot(data);
     populateForm(parsed);
-
     document.getElementById('st-proc').style.display='none';
     document.getElementById('st-review').style.display='';
     if(!document.getElementById('f-date').value)
-      document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+      document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
 
-  } catch(err) {
+  } catch(err){
     console.error(err);
-    toast('OCR failed — form left blank for manual entry','err');
+    toast('OCR failed — fill in manually using the screenshot on the left','err');
     populateForm({ map:'', t1Players:[], t2Players:[] });
     document.getElementById('st-proc').style.display='none';
     document.getElementById('st-review').style.display='';
@@ -417,46 +485,71 @@ async function processFile(file){
   Marvel Rivals end-screen column order (left to right, after player name):
     K  |  A  |  D  |  [Medal count if any]  |  Final Hits  |  Damage  |  Dmg Blocked  |  Healing  |  Accuracy%
 
-  Strategy:
-  - Player rows always end with a number followed by "%" (accuracy column).
-  - All numbers are extracted from each such line.
-  - Working right-to-left: acc, heal, blk, dmg, fh, then the remaining
-    2–4 values contain k, a, d, and possibly a medal count.
-  - Damage is always the first value > 300 in the row; used to anchor the split.
-*/
-function parseScreenshot(text){
-  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>3);
+  Primary strategy (bbox-based):
+  - Use Tesseract's structured data.lines with bbox.y0/y1 to get pixel Y positions.
+  - Filter to player rows (lines containing a "%") and sort by Y position.
+  - The largest vertical gap between consecutive player rows is the Victory/Defeat boundary.
+  - Split there: rows above = Victory team, rows below = Defeat team.
+  - This works for both dark-bg screenshots (which have an explicit DEFEAT header)
+    and light-bg screenshots (which have no DEFEAT text, only a visual color change).
 
-  // Find VICTORY / DEFEAT section boundaries
+  Fallback (text-based):
+  - If structured lines are unavailable or yield fewer than 6 total players,
+    fall back to searching plain text for VICTORY/DEFEAT keywords.
+*/
+function parseScreenshot(data){
+  // Primary: use structured line bounding boxes
+  if(data.lines && data.lines.length){
+    const playerLines = data.lines
+      .filter(l=>/\d+\s*%/.test(l.text))
+      .sort((a,b)=>a.bbox.y0 - b.bbox.y0);
+
+    if(playerLines.length >= 2){
+      // Find largest vertical gap between consecutive player rows
+      let maxGap=0, splitAfter=Math.floor(playerLines.length/2);
+      for(let i=1; i<playerLines.length; i++){
+        const gap = playerLines[i].bbox.y0 - playerLines[i-1].bbox.y1;
+        if(gap > maxGap){ maxGap=gap; splitAfter=i; }
+      }
+
+      const t1Lines = playerLines.slice(0, splitAfter);
+      const t2Lines = playerLines.slice(splitAfter);
+      const t1Players = t1Lines.slice(0,6).map(l=>parsePlayerLine(l.text)).filter(Boolean);
+      const t2Players = t2Lines.slice(0,6).map(l=>parsePlayerLine(l.text)).filter(Boolean);
+
+      if(t1Players.length + t2Players.length >= 6){
+        return { map: extractMapName(data.text||''), t1Players, t2Players };
+      }
+    }
+  }
+
+  // Fallback: plain text with VICTORY/DEFEAT keyword search
+  return parseFromText(data.text || '');
+}
+
+function extractMapName(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>3);
+  for(const l of lines.slice(0, Math.min(15, lines.length))){
+    if(/^[A-Z][A-Z'\-\s]{8,}$/.test(l) && !/VICTORY|DEFEAT|PLAYER|NAME|DAMAGE|HEAL|ACCUR/i.test(l)){
+      return l;
+    }
+  }
+  return '';
+}
+
+function parseFromText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>3);
   let vicIdx=-1, defIdx=-1;
   lines.forEach((l,i)=>{
     if(/\bvictory\b/i.test(l) && !/\d+%/.test(l)) vicIdx=i;
     if(/\bdefeat\b/i.test(l)  && !/\d+%/.test(l)) defIdx=i;
   });
-
-  // Player rows are lines containing a "%" sign (accuracy column)
-  const playerLines = lines
-    .map((l,i)=>({l,i}))
-    .filter(({l})=>/\d+\s*%/.test(l));
-
-  // Split into teams by position relative to DEFEAT header
+  const playerLines = lines.map((l,i)=>({l,i})).filter(({l})=>/\d+\s*%/.test(l));
   const t1Lines = defIdx>=0 ? playerLines.filter(p=>p.i<defIdx) : playerLines.slice(0,6);
   const t2Lines = defIdx>=0 ? playerLines.filter(p=>p.i>=defIdx) : playerLines.slice(6);
-
   const t1Players = t1Lines.slice(0,6).map(p=>parsePlayerLine(p.l)).filter(Boolean);
   const t2Players = t2Lines.slice(0,6).map(p=>parsePlayerLine(p.l)).filter(Boolean);
-
-  // Try to extract map name from top portion of OCR output
-  // Map names in Marvel Rivals are all-caps multi-word strings
-  let map = '';
-  for(const l of lines.slice(0, Math.min(15, lines.length))){
-    // Looking for long uppercase strings without digits that look like map names
-    if(/^[A-Z][A-Z'\-\s]{8,}$/.test(l) && !/VICTORY|DEFEAT|PLAYER|NAME|DAMAGE|HEAL|ACCUR/i.test(l)){
-      map = l; break;
-    }
-  }
-
-  return { map, t1Players, t2Players };
+  return { map: extractMapName(text), t1Players, t2Players };
 }
 
 function parsePlayerLine(line){
