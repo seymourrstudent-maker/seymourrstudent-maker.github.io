@@ -4,7 +4,7 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rivals Tracker | Rapheal Seymour</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--accent:#5bf5c2;--accent2:#7c6dfa;--accent3:#f5a05b;--text:#e8eaf0;--muted:#6b7280;--nav-h:64px;--radius:8px}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -233,8 +233,14 @@
 
           <!-- Left: screenshot -->
           <div class="ss-pane">
-            <img id="ss-img" alt="Match screenshot" />
-            <button class="btn btn-outline btn-sm" onclick="resetUpload()" style="margin-top:.75rem;width:100%">↺ Upload Different Screenshot</button>
+            <div style="position:relative;line-height:0">
+              <img id="ss-img" alt="Match screenshot" style="display:block;width:100%" />
+              <canvas id="calib-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none"></canvas>
+            </div>
+            <div style="display:flex;gap:.5rem;margin-top:.75rem">
+              <button class="btn btn-outline btn-sm" onclick="resetUpload()" style="flex:1">↺ Upload Different</button>
+              <button class="btn btn-outline btn-sm" id="calib-btn" onclick="toggleCalib()" style="flex:1">⊞ Show Crop Boxes</button>
+            </div>
           </div>
 
           <!-- Right: editable form -->
@@ -398,24 +404,25 @@ function resetUpload(){
 }
 
 // ── Layout constants ───────────────────────────────────────────────────────
-// Pixel coordinates calibrated for 1920×1080 screenshots.
+// Pixel coordinates calibrated for 2560×1440 screenshots.
 // The script scales these automatically if the image is a different resolution.
-const SRC_W = 1920, SRC_H = 1080;
+// Use "Show Crop Boxes" after uploading a screenshot to verify alignment.
+const SRC_W = 2560, SRC_H = 1440;
 const LAYOUT = {
   cols: {
-    name: [316, 492],
-    k:    [490, 528],
-    d:    [526, 562],
-    a:    [560, 598],
-    fh:   [840, 968],
-    dmg:  [955, 1068],
-    blk:  [1056, 1178],
-    heal: [1170, 1254],
-    acc:  [1248, 1345],
+    name: [620,  950],
+    k:    [955,  1040],
+    d:    [1045, 1130],
+    a:    [1135, 1220],
+    fh:   [1480, 1610],
+    dmg:  [1615, 1760],
+    blk:  [1765, 1920],
+    heal: [1925, 2075],
+    acc:  [2080, 2230],
   },
-  victoryRows: [204, 241, 277, 313, 350, 387],
-  defeatRows:  [432, 468, 504, 540, 577, 614],
-  rowHalf: 17,
+  victoryRows: [225, 278, 328, 378, 428, 478],
+  defeatRows:  [555, 605, 655, 705, 755, 805],
+  rowHalf: 25,
 };
 
 // ── Cell helpers ───────────────────────────────────────────────────────────
@@ -470,12 +477,18 @@ async function processFile(file){
     const img = await loadImage(url);
     const sx = img.naturalWidth  / SRC_W;
     const sy = img.naturalHeight / SRC_H;
+    console.log(`[Rivals] Image: ${img.naturalWidth}×${img.naturalHeight} | Scale: ${sx.toFixed(3)}×${sy.toFixed(3)} | Base: ${SRC_W}×${SRC_H}`);
 
     document.getElementById('proc-msg').textContent = 'Starting OCR engine…';
-    const worker = await Tesseract.createWorker('eng', 1, { logger: ()=>{} });
+    const worker = await Tesseract.createWorker('eng', 1, {
+      workerPath:   'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+      corePath:     'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-lstm.wasm.js',
+      langPath:     'https://tessdata.projectnaptha.com/4.0.0',
+      logger: ()=>{}
+    });
 
-    const NUM_CFG  = { tessedit_pageseg_mode:'7', tessedit_char_whitelist:'0123456789' };
-    const NAME_CFG = { tessedit_pageseg_mode:'7', tessedit_char_whitelist:'' };
+    // Set PSM 7 (single text line) once — smaller crops read much better this way
+    try { await worker.setParameters({ tessedit_pageseg_mode: '7' }); } catch(_){}
 
     let done = 0;
     const setMsg = () => {
@@ -485,15 +498,12 @@ async function processFile(file){
     };
 
     const readRow = async (yNorm) => {
-      await worker.setParameters(NAME_CFG);
-      const { data: { text: nameRaw } } = await worker.recognize(cropCell(img, yNorm, 'name', sx, sy));
-      const name = nameRaw.replace(/[^\w\s\-.']/g, '').trim();
-
-      await worker.setParameters(NUM_CFG);
-      const num = async col => {
+      const ocr = async col => {
         const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy));
-        return parseInt(text.replace(/\D/g,'')) || 0;
+        return text.trim();
       };
+      const name = (await ocr('name')).replace(/[^\w\s\-.']/g, '').trim();
+      const num  = async col => parseInt((await ocr(col)).replace(/\D/g,'')) || 0;
       const k = await num('k'), d = await num('d'), a = await num('a');
       const fh = await num('fh'), dmg = await num('dmg'), blk = await num('blk');
       const heal = await num('heal'), acc = await num('acc');
@@ -835,6 +845,37 @@ function updateMapList(){
   wrap.style.display='';
   sel.innerHTML = '<option value="">Select map…</option>' +
     (MAP_DATA[mode]||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+
+// ── Calibration Overlay ────────────────────────────────────────────────────
+let calibVisible = false;
+
+function toggleCalib(){
+  calibVisible = !calibVisible;
+  const canvas = document.getElementById('calib-canvas');
+  const btn    = document.getElementById('calib-btn');
+  canvas.style.display = calibVisible ? '' : 'none';
+  btn.textContent = calibVisible ? '⊠ Hide Crop Boxes' : '⊞ Show Crop Boxes';
+  if(calibVisible) drawCalibBoxes();
+}
+
+function drawCalibBoxes(){
+  const imgEl = document.getElementById('ss-img');
+  const canvas = document.getElementById('calib-canvas');
+  canvas.width  = imgEl.offsetWidth;
+  canvas.height = imgEl.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const sx = (imgEl.offsetWidth  / imgEl.naturalWidth)  * (imgEl.naturalWidth  / SRC_W);
+  const sy = (imgEl.offsetHeight / imgEl.naturalHeight) * (imgEl.naturalHeight / SRC_H);
+  const box = (x0, x1, yc, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    ctx.strokeRect(x0*sx, (yc-LAYOUT.rowHalf)*sy, (x1-x0)*sx, LAYOUT.rowHalf*2*sy);
+  };
+  for(const y of LAYOUT.victoryRows)
+    for(const [,[x0,x1]] of Object.entries(LAYOUT.cols)) box(x0,x1,y,'rgba(91,245,194,0.85)');
+  for(const y of LAYOUT.defeatRows)
+    for(const [,[x0,x1]] of Object.entries(LAYOUT.cols)) box(x0,x1,y,'rgba(255,100,220,0.85)');
 }
 
 // ── Award Exclusivity ──────────────────────────────────────────────────────
