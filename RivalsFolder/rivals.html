@@ -607,14 +607,14 @@ function teamRows(players, team){
         <option value="S"${role==='S'?' selected':''}>Strategist</option>
         <option value="V"${role==='V'?' selected':''}>Vanguard</option>
       </select></td>
-      <td><input class="ni" type="number" min="0" value="${v('k')}" /></td>
-      <td><input class="ni" type="number" min="0" value="${v('a')}" /></td>
-      <td><input class="ni" type="number" min="0" value="${v('d')}" /></td>
-      <td><input class="ni" type="number" min="0" value="${v('fh')}" /></td>
-      <td><input class="wi" type="number" min="0" value="${v('dmg')}" /></td>
-      <td><input class="wi" type="number" min="0" value="${v('blk')}" /></td>
-      <td><input class="wi" type="number" min="0" value="${v('heal')}" /></td>
-      <td><input class="ni" type="number" min="0" max="100" value="${v('acc')}" /></td>
+      <td><input class="ni" type="text" inputmode="numeric" value="${v('k')}" /></td>
+      <td><input class="ni" type="text" inputmode="numeric" value="${v('a')}" /></td>
+      <td><input class="ni" type="text" inputmode="numeric" value="${v('d')}" /></td>
+      <td><input class="ni" type="text" inputmode="numeric" value="${v('fh')}" /></td>
+      <td><input class="wi" type="text" inputmode="numeric" value="${v('dmg')}" /></td>
+      <td><input class="wi" type="text" inputmode="numeric" value="${v('blk')}" /></td>
+      <td><input class="wi" type="text" inputmode="numeric" value="${v('heal')}" /></td>
+      <td><input class="ni" type="text" inputmode="numeric" value="${v('acc')}" /></td>
       <td><select class="as">
         <option value="">None</option>
         <option value="MVP">MVP</option>
