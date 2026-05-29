@@ -264,7 +264,7 @@
 
             <!-- Victory team -->
             <div class="th-row">
-              <div class="tb win">VICTORY</div>
+              <div class="tb win" id="t1-badge">VICTORY</div>
               <div class="field" style="flex:1"><label>Team Name</label><input id="f-t1n" type="text" placeholder="Team 1" /></div>
               <div class="field" style="width:75px"><label>Score</label><input id="f-t1s" type="number" min="0" max="9" value="1" /></div>
             </div>
@@ -276,7 +276,7 @@
 
             <!-- Defeat team -->
             <div class="th-row">
-              <div class="tb loss">DEFEAT</div>
+              <div class="tb loss" id="t2-badge">DEFEAT</div>
               <div class="field" style="flex:1"><label>Team Name</label><input id="f-t2n" type="text" placeholder="Team 2" /></div>
               <div class="field" style="width:75px"><label>Score</label><input id="f-t2s" type="number" min="0" max="9" value="0" /></div>
             </div>
@@ -400,6 +400,9 @@ function resetUpload(){
   document.getElementById('map-wrap').style.display='none';
   document.getElementById('f-map').innerHTML='<option value="">Select map…</option>';
   document.getElementById('player-warn').style.display='none';
+  const b1=document.getElementById('t1-badge'), b2=document.getElementById('t2-badge');
+  b1.className='tb win';  b1.textContent='VICTORY';
+  b2.className='tb loss'; b2.textContent='DEFEAT';
   fileIn.value='';
 }
 
@@ -447,7 +450,7 @@ function detectRole(img, yNorm, sx, sy, label='?'){
     const r=d[i], g=d[i+1], b=d[i+2];
     const max=Math.max(r,g,b), min=Math.min(r,g,b);
     const sat = max > 0 ? (max-min)/max : 0;
-    if(sat > 0.25 && max > 50 && max < 245){ rS+=r; gS+=g; bS+=b; n++; }
+    if(sat > 0.12 && max > 40 && max < 248){ rS+=r; gS+=g; bS+=b; n++; }
   }
 
   if(n < 8){ console.log(`[Role ${label}] too few saturated px → D`); return 'D'; }
@@ -527,20 +530,27 @@ async function processFile(file){
       logger: ()=>{}
     });
 
-    // Detect VICTORY or DEFEAT from the large text at the top-left of the screenshot.
-    // VICTORY → top rows are the winning team; DEFEAT → top rows are the losing team.
-    const detectResult = async () => {
-      const x0=Math.round(40*sx), y0=Math.round(20*sy);
-      const w=Math.round(460*sx),  h=Math.round(190*sy);
+    // Detect VICTORY or DEFEAT by pixel color — no OCR needed.
+    // "VICTORY" text is bright yellow/gold. "DEFEAT" text is white/blue — NOT yellow.
+    // So: count yellow pixels in the top-left region. If enough are yellow → VICTORY, else → DEFEAT.
+    const detectResult = () => {
+      const x0=Math.round(50*sx), y0=Math.round(30*sy);
+      const w=Math.round(380*sx), h=Math.round(160*sy);
       const c=document.createElement('canvas');
-      c.width=w*2; c.height=h*2;
-      c.getContext('2d').drawImage(img, x0, y0, w, h, 0, 0, w*2, h*2);
-      try {
-        await worker.setParameters({ tessedit_pageseg_mode: '6' });
-        const { data: { text } } = await worker.recognize(c);
-        console.log('[Result]', text.trim());
-        return /victory/i.test(text);
-      } catch(_){ return true; }
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img, x0, y0, w, h, 0, 0, w, h);
+      const d=c.getContext('2d').getImageData(0,0,w,h).data;
+      let yellow=0, bright=0;
+      for(let i=0; i<d.length; i+=4){
+        const r=d[i], g=d[i+1], b=d[i+2];
+        if((r+g+b)/3 < 60) continue; // skip dark background
+        bright++;
+        if(r>175 && g>135 && b<110) yellow++; // gold/yellow signature
+      }
+      const ratio = bright > 0 ? yellow/bright : 0;
+      const isVic = ratio > 0.07; // >7% of bright pixels are yellow → VICTORY
+      console.log(`[Result] yellow=${yellow}/${bright} (${(ratio*100).toFixed(1)}%) → ${isVic?'VICTORY':'DEFEAT'}`);
+      return isVic;
     };
 
     // Set PSM 7 (single text line) once — smaller crops read much better this way
@@ -568,8 +578,18 @@ async function processFile(file){
       return { name, role, k, d, a, fh, dmg, blk, heal, acc };
     };
 
-    const isVictory = await detectResult();
+    const isVictory = detectResult();
     console.log('[Result] isVictory=', isVictory);
+
+    const b1 = document.getElementById('t1-badge');
+    const b2 = document.getElementById('t2-badge');
+    if(isVictory){
+      b1.className='tb win';  b1.textContent='VICTORY';
+      b2.className='tb loss'; b2.textContent='DEFEAT';
+    } else {
+      b1.className='tb loss'; b1.textContent='DEFEAT';
+      b2.className='tb win';  b2.textContent='VICTORY';
+    }
 
     const topPlayers = [], bottomPlayers = [];
     for(let i=0; i<LAYOUT.victoryRows.length; i++) topPlayers.push(await readRow(LAYOUT.victoryRows[i], `top-${i+1}`));
