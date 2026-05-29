@@ -60,9 +60,8 @@
     .proc-msg{font-size:0.72rem;color:var(--muted)}
 
     /* review layout */
-    .review-wrap{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:1.5rem;align-items:start}
-    .ss-pane{position:sticky;top:calc(var(--nav-h) + 1rem)}
-    .ss-pane img{width:100%;border-radius:8px;border:1px solid var(--border);display:block}
+    .review-wrap{display:flex;flex-direction:column;gap:1.5rem}
+    .ss-pane img{width:100%;max-height:75vh;object-fit:contain;border-radius:8px;border:1px solid var(--border);display:block;background:var(--surface)}
 
     /* form fields */
     input,select{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--text);outline:none;transition:border-color 0.2s;width:100%}
@@ -166,8 +165,6 @@
     #toast.err{border-color:#f66;color:#f66}
 
     @media(max-width:900px){
-      .review-wrap{grid-template-columns:1fr}
-      .ss-pane{position:static}
       .nav-links{display:none}
     }
   </style>
