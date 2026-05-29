@@ -410,20 +410,60 @@ function resetUpload(){
 const SRC_W = 2560, SRC_H = 1440;
 const LAYOUT = {
   cols: {
-    name: [620,  950],
-    k:    [955,  1040],
-    d:    [1045, 1130],
-    a:    [1135, 1220],
-    fh:   [1480, 1610],
-    dmg:  [1615, 1760],
-    blk:  [1765, 1920],
-    heal: [1925, 2075],
-    acc:  [2080, 2230],
+    role: [220,  310],
+    name: [550,  790],
+    k:    [860,  935],
+    d:    [937,  1012],
+    a:    [1014, 1089],
+    fh:   [1520, 1637],
+    dmg:  [1685, 1815],
+    blk:  [1865, 1990],
+    heal: [2035, 2150],
+    acc:  [2210, 2320],
   },
-  victoryRows: [225, 278, 328, 378, 428, 478],
-  defeatRows:  [555, 605, 655, 705, 755, 805],
-  rowHalf: 25,
+  victoryRows: [362, 425, 488, 551, 614, 677],
+  defeatRows:  [762, 825, 888, 951, 1014, 1077],
+  rowHalf: 30,
 };
+
+// ── Role detection ─────────────────────────────────────────────────────────
+// Samples only saturated pixels in the role icon crop, ignoring the team-colored
+// row background. Role icon colors are role-specific and consistent:
+//   Vanguard (crossed fists) = blue, Duelist (one fist) = red/orange, Strategist (open palm) = green.
+function detectRole(img, yNorm, sx, sy, label='?'){
+  const [x0n, x1n] = LAYOUT.cols.role;
+  const rh = Math.round(LAYOUT.rowHalf * 0.6);
+  const x0 = Math.round(x0n * sx), x1 = Math.round(x1n * sx);
+  const y0 = Math.round((yNorm - rh) * sy), y1 = Math.round((yNorm + rh) * sy);
+  const w = Math.max(x1-x0, 1), h = Math.max(y1-y0, 1);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, x0, y0, w, h, 0, 0, w, h);
+  const d = c.getContext('2d').getImageData(0, 0, w, h).data;
+
+  // Only average pixels with meaningful saturation — filters out team background tint
+  let rS=0, gS=0, bS=0, n=0;
+  for(let i=0; i<d.length; i+=4){
+    const r=d[i], g=d[i+1], b=d[i+2];
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    const sat = max > 0 ? (max-min)/max : 0;
+    if(sat > 0.25 && max > 50 && max < 245){ rS+=r; gS+=g; bS+=b; n++; }
+  }
+
+  if(n < 8){ console.log(`[Role ${label}] too few saturated px → D`); return 'D'; }
+
+  const r=rS/n, g=gS/n, b=bS/n;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), delta=max-min;
+  let hue;
+  if(max===r)      hue = 60*(((g-b)/delta)%6);
+  else if(max===g) hue = 60*((b-r)/delta+2);
+  else             hue = 60*((r-g)/delta+4);
+  if(hue < 0) hue += 360;
+
+  const role = (hue >= 75 && hue <= 165) ? 'S' : (hue >= 165 && hue <= 265) ? 'V' : 'D';
+  console.log(`[Role ${label}] hue=${hue.toFixed(1)} rgb=(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)}) n=${n} → ${role}`);
+  return role;
+}
 
 // ── Cell helpers ───────────────────────────────────────────────────────────
 function loadImage(src){
@@ -487,6 +527,22 @@ async function processFile(file){
       logger: ()=>{}
     });
 
+    // Detect VICTORY or DEFEAT from the large text at the top-left of the screenshot.
+    // VICTORY → top rows are the winning team; DEFEAT → top rows are the losing team.
+    const detectResult = async () => {
+      const x0=Math.round(40*sx), y0=Math.round(20*sy);
+      const w=Math.round(460*sx),  h=Math.round(190*sy);
+      const c=document.createElement('canvas');
+      c.width=w*2; c.height=h*2;
+      c.getContext('2d').drawImage(img, x0, y0, w, h, 0, 0, w*2, h*2);
+      try {
+        await worker.setParameters({ tessedit_pageseg_mode: '6' });
+        const { data: { text } } = await worker.recognize(c);
+        console.log('[Result]', text.trim());
+        return /victory/i.test(text);
+      } catch(_){ return true; }
+    };
+
     // Set PSM 7 (single text line) once — smaller crops read much better this way
     try { await worker.setParameters({ tessedit_pageseg_mode: '7' }); } catch(_){}
 
@@ -497,7 +553,7 @@ async function processFile(file){
       document.getElementById('proc-msg').textContent = `Reading player ${done} of 12…`;
     };
 
-    const readRow = async (yNorm) => {
+    const readRow = async (yNorm, label) => {
       const ocr = async col => {
         const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy));
         return text.trim();
@@ -507,15 +563,21 @@ async function processFile(file){
       const k = await num('k'), d = await num('d'), a = await num('a');
       const fh = await num('fh'), dmg = await num('dmg'), blk = await num('blk');
       const heal = await num('heal'), acc = await num('acc');
-      const role = heal > 2500 ? 'S' : blk > 2500 ? 'V' : 'D';
+      const role = detectRole(img, yNorm, sx, sy, label);
       done++; setMsg();
       return { name, role, k, d, a, fh, dmg, blk, heal, acc };
     };
 
-    const t1Players = [];
-    for(const y of LAYOUT.victoryRows) t1Players.push(await readRow(y));
-    const t2Players = [];
-    for(const y of LAYOUT.defeatRows)  t2Players.push(await readRow(y));
+    const isVictory = await detectResult();
+    console.log('[Result] isVictory=', isVictory);
+
+    const topPlayers = [], bottomPlayers = [];
+    for(let i=0; i<LAYOUT.victoryRows.length; i++) topPlayers.push(await readRow(LAYOUT.victoryRows[i], `top-${i+1}`));
+    for(let i=0; i<LAYOUT.defeatRows.length; i++)  bottomPlayers.push(await readRow(LAYOUT.defeatRows[i],  `bot-${i+1}`));
+
+    // Top rows = winner if VICTORY screen, loser if DEFEAT screen
+    const t1Players = isVictory ? topPlayers : bottomPlayers;
+    const t2Players = isVictory ? bottomPlayers : topPlayers;
 
     await worker.terminate();
 
