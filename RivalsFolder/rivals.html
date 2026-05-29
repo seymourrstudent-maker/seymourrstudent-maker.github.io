@@ -264,7 +264,7 @@
             </div>
             <div class="ptable-wrap">
               <table class="ptable"><thead><tr>
-                <th>Name</th><th>Role</th><th>K</th><th>D</th><th>A</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>Award</th>
+                <th>Name</th><th>Role</th><th>K</th><th>D</th><th>A</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>MVP</th>
               </tr></thead><tbody id="t1-rows"></tbody></table>
             </div>
 
@@ -276,7 +276,7 @@
             </div>
             <div class="ptable-wrap">
               <table class="ptable"><thead><tr>
-                <th>Name</th><th>Role</th><th>K</th><th>D</th><th>A</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>Award</th>
+                <th>Name</th><th>Role</th><th>K</th><th>D</th><th>A</th><th>FH</th><th>DMG</th><th>BLK</th><th>Heal</th><th>Acc%</th><th>SVP</th>
               </tr></thead><tbody id="t2-rows"></tbody></table>
             </div>
 
@@ -634,8 +634,8 @@ function teamRows(players, team){
       <td><input class="ni stat-in acc-in" type="text" inputmode="numeric" value="${v('acc')}" /></td>
       <td><select class="as" onchange="updateAwardOptions()">${
         team===1
-          ? '<option value="">None</option><option value="MVP">MVP</option>'
-          : '<option value="">None</option><option value="SVP">SVP</option>'
+          ? '<option value=""></option><option value="MVP">MVP</option>'
+          : '<option value=""></option><option value="SVP">SVP</option>'
       }</select></td>
     </tr>`;
   }).join('');
@@ -884,20 +884,25 @@ function renderLB(){
 // ── Map Data ───────────────────────────────────────────────────────────────
 const MAP_DATA = {
   Convergence: [
-    "K'UN-LUN: Heart of Heaven",
-    "Midtown",
-    "Intergalactic Empire of Wakanda: Hall of Djalia"
+    "Central Park",
+    "Hall of Djalia",
+    "Symbiotic Surface",
+    "Shin-Shibuya",
+    "K'un Lun",
+    "Lower Manhattan"
   ],
   Convoy: [
-    "Yggsgard: Royal Palace",
-    "Birnin T'Challa: Vibranium Mound",
-    "Tokyo 2099: Shin-Ra Building"
+    "Arrako",
+    "Midtown",
+    "Spider-Islands",
+    "Yggsdrasil Path",
+    "Museum of Contemplation"
   ],
   Domination: [
-    "Yggsgard: Royal Palace",
-    "Birnin T'Challa: Vibranium Mound",
-    "Tokyo 2099: Shin-Ra Building",
-    "Throne of Darkness"
+    "Krakoa",
+    "Hell's Heaven",
+    "Birnin T'Challa",
+    "Celestial Husk"
   ]
 };
 
