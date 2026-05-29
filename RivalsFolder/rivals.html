@@ -397,210 +397,131 @@ function resetUpload(){
   fileIn.value='';
 }
 
-// ── Image Preprocessing ─────────────────────────────────────────────────────
-/*
-  Converts the screenshot to a high-contrast black-and-white image scaled 2×.
-  Detects dark vs light background by sampling the top-left corner:
-    Dark bg (screenshot style 1): white text on dark — keep bright pixels as white.
-    Light bg (screenshot style 2): dark text on light — keep dark pixels as black.
-  Binary threshold removes colored UI noise, leaving clean text for Tesseract.
-*/
-function preprocessForOCR(file){
-  return new Promise((resolve, reject)=>{
+// ── Layout constants ───────────────────────────────────────────────────────
+// Pixel coordinates calibrated for 1920×1080 screenshots.
+// The script scales these automatically if the image is a different resolution.
+const SRC_W = 1920, SRC_H = 1080;
+const LAYOUT = {
+  cols: {
+    name: [316, 492],
+    k:    [490, 528],
+    d:    [526, 562],
+    a:    [560, 598],
+    fh:   [840, 968],
+    dmg:  [955, 1068],
+    blk:  [1056, 1178],
+    heal: [1170, 1254],
+    acc:  [1248, 1345],
+  },
+  victoryRows: [204, 241, 277, 313, 350, 387],
+  defeatRows:  [432, 468, 504, 540, 577, 614],
+  rowHalf: 17,
+};
+
+// ── Cell helpers ───────────────────────────────────────────────────────────
+function loadImage(src){
+  return new Promise((res, rej) => {
     const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = ()=>{
-      URL.revokeObjectURL(url);
-      const SCALE = 2;
-      const canvas = document.createElement('canvas');
-      canvas.width  = img.width  * SCALE;
-      canvas.height = img.height * SCALE;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      const idata = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = idata.data;
-
-      // Sample top-left 8% × 8% to detect background tone
-      const sw = Math.floor(canvas.width  * 0.08);
-      const sh = Math.floor(canvas.height * 0.08);
-      let sum = 0, n = 0;
-      for(let y=0; y<sh; y++) for(let x=0; x<sw; x++){
-        const i=(y*canvas.width+x)*4;
-        sum += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-        n++;
-      }
-      const isDark = (sum/n) < 100; // avg brightness of corner < 100 → dark background
-
-      // Binary threshold: isolate text pixels
-      for(let i=0; i<d.length; i+=4){
-        const gray = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
-        // Dark bg: text is white (gray > 160 → white, else black)
-        // Light bg: text is dark (gray < 120 → black, else white)
-        const v = isDark ? (gray > 160 ? 255 : 0) : (gray < 120 ? 0 : 255);
-        d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
-      }
-      ctx.putImageData(idata, 0, 0);
-      canvas.toBlob(resolve, 'image/png');
-    };
-    img.onerror = reject;
-    img.src = url;
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
   });
+}
+
+// Crop a single cell, upscale 3×, and threshold to black-text-on-white for Tesseract.
+function cropCell(img, yCenterNorm, colName, sx, sy){
+  const [x0n, x1n] = LAYOUT.cols[colName];
+  const rh = LAYOUT.rowHalf;
+  const x0 = Math.round(x0n * sx), x1 = Math.round(x1n * sx);
+  const y0 = Math.round((yCenterNorm - rh) * sy), y1 = Math.round((yCenterNorm + rh) * sy);
+  const sw = Math.max(x1 - x0, 1), sh = Math.max(y1 - y0, 1);
+  const UPSCALE = 3;
+  const c = document.createElement('canvas');
+  c.width = sw * UPSCALE; c.height = sh * UPSCALE;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, x0, y0, sw, sh, 0, 0, c.width, c.height);
+  // Sample four corners to decide if background is dark or light
+  const idata = ctx.getImageData(0, 0, c.width, c.height);
+  const d = idata.data;
+  const luma = px => 0.299*d[px] + 0.587*d[px+1] + 0.114*d[px+2];
+  const cw = c.width, ch = c.height;
+  const avgCorner = (luma(0) + luma((cw-1)*4) + luma((ch-1)*cw*4) + luma(((ch-1)*cw+cw-1)*4)) / 4;
+  const isDark = avgCorner < 128;
+  // Produce black text on white background for Tesseract
+  for(let i = 0; i < d.length; i += 4){
+    const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+    const v = isDark ? (g > 140 ? 0 : 255) : (g < 140 ? 0 : 255);
+    d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
+  }
+  ctx.putImageData(idata, 0, 0);
+  return c;
 }
 
 // ── OCR Pipeline ───────────────────────────────────────────────────────────
 async function processFile(file){
-  // Show original screenshot as preview
   const url = URL.createObjectURL(file);
   document.getElementById('ss-img').src = url;
-  document.getElementById('st-upload').style.display='none';
-  document.getElementById('st-proc').style.display='';
-  document.getElementById('prog-fill').style.width='0%';
-  document.getElementById('proc-msg').textContent='Preprocessing image…';
+  document.getElementById('st-upload').style.display = 'none';
+  document.getElementById('st-proc').style.display = '';
+  document.getElementById('prog-fill').style.width = '0%';
+  document.getElementById('proc-msg').textContent = 'Loading image…';
 
   try {
-    const processedBlob = await preprocessForOCR(file);
-    document.getElementById('proc-msg').textContent='Starting OCR engine…';
+    const img = await loadImage(url);
+    const sx = img.naturalWidth  / SRC_W;
+    const sy = img.naturalHeight / SRC_H;
 
-    const worker = await Tesseract.createWorker('eng', 1, {
-      logger: m=>{
-        if(m.status==='recognizing text'){
-          document.getElementById('prog-fill').style.width=Math.round(m.progress*100)+'%';
-          document.getElementById('proc-msg').textContent=Math.round(m.progress*100)+'% complete…';
-        } else if(m.status){
-          document.getElementById('proc-msg').textContent=m.status+'…';
-        }
-      }
-    });
+    document.getElementById('proc-msg').textContent = 'Starting OCR engine…';
+    const worker = await Tesseract.createWorker('eng', 1, { logger: ()=>{} });
 
-    // preserve_interword_spaces keeps column spacing intact for number parsing
-    await worker.setParameters({ preserve_interword_spaces: '1' });
-    const { data } = await worker.recognize(processedBlob);
+    const NUM_CFG  = { tessedit_pageseg_mode:'7', tessedit_char_whitelist:'0123456789' };
+    const NAME_CFG = { tessedit_pageseg_mode:'7', tessedit_char_whitelist:'' };
+
+    let done = 0;
+    const setMsg = () => {
+      const pct = Math.round((done / 12) * 100);
+      document.getElementById('prog-fill').style.width = pct + '%';
+      document.getElementById('proc-msg').textContent = `Reading player ${done} of 12…`;
+    };
+
+    const readRow = async (yNorm) => {
+      await worker.setParameters(NAME_CFG);
+      const { data: { text: nameRaw } } = await worker.recognize(cropCell(img, yNorm, 'name', sx, sy));
+      const name = nameRaw.replace(/[^\w\s\-.']/g, '').trim();
+
+      await worker.setParameters(NUM_CFG);
+      const num = async col => {
+        const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy));
+        return parseInt(text.replace(/\D/g,'')) || 0;
+      };
+      const k = await num('k'), d = await num('d'), a = await num('a');
+      const fh = await num('fh'), dmg = await num('dmg'), blk = await num('blk');
+      const heal = await num('heal'), acc = await num('acc');
+      const role = heal > 2500 ? 'S' : blk > 2500 ? 'V' : 'D';
+      done++; setMsg();
+      return { name, role, k, d, a, fh, dmg, blk, heal, acc };
+    };
+
+    const t1Players = [];
+    for(const y of LAYOUT.victoryRows) t1Players.push(await readRow(y));
+    const t2Players = [];
+    for(const y of LAYOUT.defeatRows)  t2Players.push(await readRow(y));
+
     await worker.terminate();
 
-    const parsed = parseScreenshot(data);
-    populateForm(parsed);
-    document.getElementById('st-proc').style.display='none';
-    document.getElementById('st-review').style.display='';
+    populateForm({ t1Players, t2Players });
+    document.getElementById('st-proc').style.display = 'none';
+    document.getElementById('st-review').style.display = '';
     if(!document.getElementById('f-date').value)
-      document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+      document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
 
   } catch(err){
     console.error(err);
-    toast('OCR failed — fill in manually using the screenshot on the left','err');
-    populateForm({ map:'', t1Players:[], t2Players:[] });
-    document.getElementById('st-proc').style.display='none';
-    document.getElementById('st-review').style.display='';
+    toast('OCR failed — screenshot may not match expected layout. Fill in manually.','err');
+    populateForm({ t1Players:[], t2Players:[] });
+    document.getElementById('st-proc').style.display = 'none';
+    document.getElementById('st-review').style.display = '';
   }
-}
-
-// ── OCR Text Parsing ───────────────────────────────────────────────────────
-/*
-  Marvel Rivals end-screen column order (left to right, after player name):
-    K  |  A  |  D  |  [Medal count if any]  |  Final Hits  |  Damage  |  Dmg Blocked  |  Healing  |  Accuracy%
-
-  Primary strategy (bbox-based):
-  - Use Tesseract's structured data.lines with bbox.y0/y1 to get pixel Y positions.
-  - Filter to player rows (lines containing a "%") and sort by Y position.
-  - The largest vertical gap between consecutive player rows is the Victory/Defeat boundary.
-  - Split there: rows above = Victory team, rows below = Defeat team.
-  - This works for both dark-bg screenshots (which have an explicit DEFEAT header)
-    and light-bg screenshots (which have no DEFEAT text, only a visual color change).
-
-  Fallback (text-based):
-  - If structured lines are unavailable or yield fewer than 6 total players,
-    fall back to searching plain text for VICTORY/DEFEAT keywords.
-*/
-function parseScreenshot(data){
-  // Primary: use structured line bounding boxes
-  if(data.lines && data.lines.length){
-    const playerLines = data.lines
-      .filter(l=>/\d+\s*%/.test(l.text))
-      .sort((a,b)=>a.bbox.y0 - b.bbox.y0);
-
-    if(playerLines.length >= 2){
-      // Find largest vertical gap between consecutive player rows
-      let maxGap=0, splitAfter=Math.floor(playerLines.length/2);
-      for(let i=1; i<playerLines.length; i++){
-        const gap = playerLines[i].bbox.y0 - playerLines[i-1].bbox.y1;
-        if(gap > maxGap){ maxGap=gap; splitAfter=i; }
-      }
-
-      const t1Lines = playerLines.slice(0, splitAfter);
-      const t2Lines = playerLines.slice(splitAfter);
-      const t1Players = t1Lines.slice(0,6).map(l=>parsePlayerLine(l.text)).filter(Boolean);
-      const t2Players = t2Lines.slice(0,6).map(l=>parsePlayerLine(l.text)).filter(Boolean);
-
-      if(t1Players.length + t2Players.length >= 6){
-        return { map: extractMapName(data.text||''), t1Players, t2Players };
-      }
-    }
-  }
-
-  // Fallback: plain text with VICTORY/DEFEAT keyword search
-  return parseFromText(data.text || '');
-}
-
-function extractMapName(text){
-  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>3);
-  for(const l of lines.slice(0, Math.min(15, lines.length))){
-    if(/^[A-Z][A-Z'\-\s]{8,}$/.test(l) && !/VICTORY|DEFEAT|PLAYER|NAME|DAMAGE|HEAL|ACCUR/i.test(l)){
-      return l;
-    }
-  }
-  return '';
-}
-
-function parseFromText(text){
-  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>3);
-  let vicIdx=-1, defIdx=-1;
-  lines.forEach((l,i)=>{
-    if(/\bvictory\b/i.test(l) && !/\d+%/.test(l)) vicIdx=i;
-    if(/\bdefeat\b/i.test(l)  && !/\d+%/.test(l)) defIdx=i;
-  });
-  const playerLines = lines.map((l,i)=>({l,i})).filter(({l})=>/\d+\s*%/.test(l));
-  const t1Lines = defIdx>=0 ? playerLines.filter(p=>p.i<defIdx) : playerLines.slice(0,6);
-  const t2Lines = defIdx>=0 ? playerLines.filter(p=>p.i>=defIdx) : playerLines.slice(6);
-  const t1Players = t1Lines.slice(0,6).map(p=>parsePlayerLine(p.l)).filter(Boolean);
-  const t2Players = t2Lines.slice(0,6).map(p=>parsePlayerLine(p.l)).filter(Boolean);
-  return { map: extractMapName(text), t1Players, t2Players };
-}
-
-function parsePlayerLine(line){
-  // Extract all numbers (strip commas from thousands)
-  const rawNums = line.match(/\d[\d,]*/g) || [];
-  const nums = rawNums.map(n=>parseInt(n.replace(/,/g,'')));
-
-  // Minimum 7 numbers needed (k,a,d,fh,dmg,blk_or_heal,acc)
-  if(nums.length < 7) return null;
-
-  // Extract player name: everything before the first digit
-  const nameMatch = line.match(/^([^0-9]+)/);
-  if(!nameMatch) return null;
-  const name = nameMatch[1].trim().replace(/[^\w\s\-.'ÀàÁáÂâÃãÄäÅåÆæÇçÈèÉéÊêËëÌìÍíÎîÏïÐðÑñÒòÓóÔôÕõÖöØøÙùÚúÛûÜüÝýÞþß]/g,'').trim();
-  if(!name || name.length < 2) return null;
-
-  // From the right: acc, heal, blk, dmg, fh
-  // Then remaining (left side): contains k, a, d, and possibly a medal count
-  const rev = [...nums].reverse();
-  const acc  = rev[0];
-  const heal = rev[1];
-  const blk  = rev[2];
-  const dmg  = rev[3];
-  const fh   = rev[4];
-
-  // Remaining values before fh (in original order): [k, a, d, medal?]
-  const head = nums.slice(0, nums.length - 5);
-  // Take last 3 from head as k, a, d (if medal exists it'll be at head[-1] and shift others left)
-  // This means d may be wrong if a medal count is present — user should verify
-  const a = head[head.length - 1] ?? 0;
-  const d = head[head.length - 2] ?? 0;
-  const k = head[head.length - 3] ?? 0;
-
-  // Infer role from stats
-  const role = heal > 2500 ? 'S' : blk > 2500 ? 'V' : 'D';
-
-  return { name, role, k, a, d, fh, dmg, blk, heal, acc };
 }
 
 // ── Review Form Population ─────────────────────────────────────────────────
