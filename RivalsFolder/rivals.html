@@ -472,7 +472,7 @@ function detectRole(img, yNorm, sx, sy, label='?', dx=0, dy=0){
 // Default position of "Ban & Pick" text center in 2560×1440 space,
 // calibrated from the reference screenshot. All column/row coordinates
 // in LAYOUT are expressed relative to this anchor.
-const DEFAULT_ANCHOR = { x: 1300, y: 183 };
+const DEFAULT_ANCHOR = { x: 1281, y: 229 };
 
 // ── Anchor detection ───────────────────────────────────────────────────────
 // Finds "Ban & Pick" text in the upper strip of the screenshot using sparse OCR.
@@ -503,6 +503,8 @@ async function findAnchor(img, sx, sy, worker){
       const ax = imgX / sx, ay = imgY / sy;
       const dx = ax - DEFAULT_ANCHOR.x, dy = ay - DEFAULT_ANCHOR.y;
       console.log(`[Anchor] Ban&Pick at (${ax.toFixed(0)},${ay.toFixed(0)}) offset=(${dx.toFixed(0)},${dy.toFixed(0)})`);
+      lastAnchorPos = { ax, ay };
+      lastOffset = { dx, dy };
       return { dx, dy };
     }
   } catch(e){
@@ -511,6 +513,8 @@ async function findAnchor(img, sx, sy, worker){
   }
 
   console.log('[Anchor] Ban&Pick not found — using default coordinates');
+  lastAnchorPos = null;
+  lastOffset = { dx: 0, dy: 0 };
   return { dx: 0, dy: 0 };
 }
 
@@ -1045,6 +1049,10 @@ function updateMapList(){
     (MAP_DATA[mode]||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
 }
 
+// Last anchor found by findAnchor — stored so drawCalibBoxes can visualise it.
+let lastAnchorPos = null;   // { ax, ay } in 2560-space
+let lastOffset    = { dx: 0, dy: 0 };
+
 // ── Calibration Overlay ────────────────────────────────────────────────────
 let calibVisible = false;
 
@@ -1066,14 +1074,37 @@ function drawCalibBoxes(){
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const sx = (imgEl.offsetWidth  / imgEl.naturalWidth)  * (imgEl.naturalWidth  / SRC_W);
   const sy = (imgEl.offsetHeight / imgEl.naturalHeight) * (imgEl.naturalHeight / SRC_H);
+
+  // Draw crop boxes shifted by the last detected anchor offset
+  const { dx, dy } = lastOffset;
   const box = (x0, x1, yc, color) => {
     ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-    ctx.strokeRect(x0*sx, (yc-LAYOUT.rowHalf)*sy, (x1-x0)*sx, LAYOUT.rowHalf*2*sy);
+    ctx.strokeRect((x0+dx)*sx, (yc+dy-LAYOUT.rowHalf)*sy, (x1-x0)*sx, LAYOUT.rowHalf*2*sy);
   };
   for(const y of LAYOUT.victoryRows)
     for(const [,[x0,x1]] of Object.entries(LAYOUT.cols)) box(x0,x1,y,'rgba(91,245,194,0.85)');
   for(const y of LAYOUT.defeatRows)
     for(const [,[x0,x1]] of Object.entries(LAYOUT.cols)) box(x0,x1,y,'rgba(255,100,220,0.85)');
+
+  // Helper: draw a crosshair + label at a 2560-space position
+  const cross = (x2560, y2560, color, label) => {
+    const cx = x2560 * sx, cy = y2560 * sy, s = 12;
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx-s, cy); ctx.lineTo(cx+s, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy-s); ctx.lineTo(cx, cy+s); ctx.stroke();
+    ctx.fillStyle = color; ctx.font = 'bold 11px monospace';
+    ctx.fillText(label, cx + s + 3, cy + 4);
+  };
+
+  // White cross = where the default anchor expects "Ban & Pick"
+  cross(DEFAULT_ANCHOR.x, DEFAULT_ANCHOR.y, 'rgba(255,255,255,0.8)', 'DEFAULT ANCHOR');
+
+  // Yellow cross = where "Ban & Pick" was actually detected in this screenshot
+  if(lastAnchorPos){
+    const sign = v => v >= 0 ? `+${v.toFixed(0)}` : v.toFixed(0);
+    cross(lastAnchorPos.ax, lastAnchorPos.ay, 'rgba(255,220,0,0.95)',
+          `ANCHOR (dx${sign(dx)}, dy${sign(dy)})`);
+  }
 }
 
 // ── Award Exclusivity ──────────────────────────────────────────────────────
