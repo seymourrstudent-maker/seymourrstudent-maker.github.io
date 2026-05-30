@@ -403,6 +403,7 @@ function resetUpload(){
   const b1=document.getElementById('t1-badge'), b2=document.getElementById('t2-badge');
   b1.className='tb win';  b1.textContent='VICTORY';
   b2.className='tb loss'; b2.textContent='DEFEAT';
+  editingMatchId=null;
   fileIn.value='';
 }
 
@@ -433,11 +434,11 @@ const LAYOUT = {
 // Samples only saturated pixels in the role icon crop, ignoring the team-colored
 // row background. Role icon colors are role-specific and consistent:
 //   Vanguard (crossed fists) = blue, Duelist (one fist) = red/orange, Strategist (open palm) = green.
-function detectRole(img, yNorm, sx, sy, label='?'){
+function detectRole(img, yNorm, sx, sy, label='?', dx=0, dy=0){
   const [x0n, x1n] = LAYOUT.cols.role;
   const rh = Math.round(LAYOUT.rowHalf * 0.6);
-  const x0 = Math.round(x0n * sx), x1 = Math.round(x1n * sx);
-  const y0 = Math.round((yNorm - rh) * sy), y1 = Math.round((yNorm + rh) * sy);
+  const x0 = Math.round((x0n + dx) * sx), x1 = Math.round((x1n + dx) * sx);
+  const y0 = Math.round((yNorm + dy - rh) * sy), y1 = Math.round((yNorm + dy + rh) * sy);
   const w = Math.max(x1-x0, 1), h = Math.max(y1-y0, 1);
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
@@ -468,6 +469,51 @@ function detectRole(img, yNorm, sx, sy, label='?'){
   return role;
 }
 
+// Default position of "Ban & Pick" text center in 2560×1440 space,
+// calibrated from the reference screenshot. All column/row coordinates
+// in LAYOUT are expressed relative to this anchor.
+const DEFAULT_ANCHOR = { x: 1300, y: 183 };
+
+// ── Anchor detection ───────────────────────────────────────────────────────
+// Finds "Ban & Pick" text in the upper strip of the screenshot using sparse OCR.
+// Returns {dx, dy} — how far the text is from DEFAULT_ANCHOR in 2560-space.
+// If not found returns {dx:0, dy:0} so the default LAYOUT coordinates are used.
+async function findAnchor(img, sx, sy, worker){
+  const stripH = Math.round(img.naturalHeight * 0.23);
+  const SCALE  = 2;
+  const c = document.createElement('canvas');
+  c.width  = img.naturalWidth  * SCALE;
+  c.height = stripH * SCALE;
+  c.getContext('2d').drawImage(img, 0, 0, img.naturalWidth, stripH, 0, 0, c.width, c.height);
+
+  try {
+    await worker.setParameters({ tessedit_pageseg_mode: '11' }); // sparse text
+    const { data } = await worker.recognize(c);
+    await worker.setParameters({ tessedit_pageseg_mode: '7' });  // restore
+
+    const words = data.words || [];
+    const banWord  = words.find(w => /^ban$/i.test(w.text.trim()));
+    const pickWord = words.find(w => /^pick$/i.test(w.text.trim()));
+
+    if(banWord && pickWord){
+      // Bounding boxes are in upscaled canvas space — divide by SCALE for image pixels
+      const imgX = ((banWord.bbox.x0+banWord.bbox.x1+pickWord.bbox.x0+pickWord.bbox.x1)/4) / SCALE;
+      const imgY = ((banWord.bbox.y0+banWord.bbox.y1)/2) / SCALE;
+      // Convert image pixels → 2560-space
+      const ax = imgX / sx, ay = imgY / sy;
+      const dx = ax - DEFAULT_ANCHOR.x, dy = ay - DEFAULT_ANCHOR.y;
+      console.log(`[Anchor] Ban&Pick at (${ax.toFixed(0)},${ay.toFixed(0)}) offset=(${dx.toFixed(0)},${dy.toFixed(0)})`);
+      return { dx, dy };
+    }
+  } catch(e){
+    console.warn('[Anchor] search failed:', e);
+    try { await worker.setParameters({ tessedit_pageseg_mode: '7' }); } catch(_){}
+  }
+
+  console.log('[Anchor] Ban&Pick not found — using default coordinates');
+  return { dx: 0, dy: 0 };
+}
+
 // ── Cell helpers ───────────────────────────────────────────────────────────
 function loadImage(src){
   return new Promise((res, rej) => {
@@ -479,11 +525,12 @@ function loadImage(src){
 }
 
 // Crop a single cell, upscale 3×, and threshold to black-text-on-white for Tesseract.
-function cropCell(img, yCenterNorm, colName, sx, sy){
+// dx/dy are anchor offsets in 2560-space — shifts all boxes to match where "Ban & Pick" was found.
+function cropCell(img, yCenterNorm, colName, sx, sy, dx=0, dy=0){
   const [x0n, x1n] = LAYOUT.cols[colName];
   const rh = LAYOUT.rowHalf;
-  const x0 = Math.round(x0n * sx), x1 = Math.round(x1n * sx);
-  const y0 = Math.round((yCenterNorm - rh) * sy), y1 = Math.round((yCenterNorm + rh) * sy);
+  const x0 = Math.round((x0n + dx) * sx), x1 = Math.round((x1n + dx) * sx);
+  const y0 = Math.round((yCenterNorm + dy - rh) * sy), y1 = Math.round((yCenterNorm + dy + rh) * sy);
   const sw = Math.max(x1 - x0, 1), sh = Math.max(y1 - y0, 1);
   const UPSCALE = 3;
   const c = document.createElement('canvas');
@@ -553,6 +600,10 @@ async function processFile(file){
       return isVic;
     };
 
+    // Find "Ban & Pick" anchor — sets PSM 11 internally then resets to 7
+    document.getElementById('proc-msg').textContent = 'Finding anchor…';
+    const { dx, dy } = await findAnchor(img, sx, sy, worker);
+
     // Set PSM 7 (single text line) once — smaller crops read much better this way
     try { await worker.setParameters({ tessedit_pageseg_mode: '7' }); } catch(_){}
 
@@ -565,7 +616,7 @@ async function processFile(file){
 
     const readRow = async (yNorm, label) => {
       const ocr = async col => {
-        const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy));
+        const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy, dx, dy));
         return text.trim();
       };
       const name = (await ocr('name')).replace(/[^\w\s\-.']/g, '').trim();
@@ -573,7 +624,7 @@ async function processFile(file){
       const k = await num('k'), d = await num('d'), a = await num('a');
       const fh = await num('fh'), dmg = await num('dmg'), blk = await num('blk');
       const heal = await num('heal'), acc = await num('acc');
-      const role = detectRole(img, yNorm, sx, sy, label);
+      const role = detectRole(img, yNorm, sx, sy, label, dx, dy);
       done++; setMsg();
       return { name, role, k, d, a, fh, dmg, blk, heal, acc };
     };
@@ -728,10 +779,74 @@ function saveMatch(){
   const match = { id:genId(), day, date, mode, map,
     team1:{name:t1n,score:t1s}, team2:{name:t2n,score:t2s}, entries };
 
-  const all = getMatches(); all.push(match); saveMatches(all);
+  const all = getMatches();
+  if(editingMatchId){
+    const idx = all.findIndex(m=>m.id===editingMatchId);
+    if(idx>=0) all[idx]=match; else all.push(match);
+    toast(`Match updated — ${entries.length} players`);
+  } else {
+    match.id = genId();
+    all.push(match);
+    toast(`Match saved — ${entries.length} players`);
+  }
+  saveMatches(all);
   updateStats();
-  toast(`Match saved — ${entries.length} players`);
   resetUpload();
+}
+
+// ── Edit Match ─────────────────────────────────────────────────────────────
+let editingMatchId = null;
+
+function editMatch(id){
+  const match = getMatches().find(m=>m.id===id);
+  if(!match) return;
+  editingMatchId = id;
+
+  showTab('add');
+  document.getElementById('st-upload').style.display='none';
+  document.getElementById('st-proc').style.display='none';
+  document.getElementById('st-review').style.display='';
+  document.getElementById('ss-img').src='';
+
+  // Meta fields
+  document.getElementById('f-day').value  = match.day  || 1;
+  document.getElementById('f-date').value = match.date || '';
+  document.getElementById('f-mode').value = match.mode || '';
+  updateMapList();
+  document.getElementById('f-map').value  = match.map  || '';
+  document.getElementById('f-t1n').value  = match.team1?.name  || '';
+  document.getElementById('f-t1s').value  = match.team1?.score ?? 1;
+  document.getElementById('f-t2n').value  = match.team2?.name  || '';
+  document.getElementById('f-t2s').value  = match.team2?.score ?? 0;
+
+  // Badges
+  const t1win = (match.team1?.score??1) > (match.team2?.score??0);
+  const b1=document.getElementById('t1-badge'), b2=document.getElementById('t2-badge');
+  b1.className=t1win?'tb win':'tb loss'; b1.textContent=t1win?'VICTORY':'DEFEAT';
+  b2.className=t1win?'tb loss':'tb win'; b2.textContent=t1win?'DEFEAT':'VICTORY';
+
+  // Player rows
+  const toPlayer = e=>({ name:e.player_name, role:e.role,
+    k:e.k, d:e.d, a:e.a, fh:e.fh, dmg:e.dmg, blk:e.blk, heal:e.heal, acc:e.acc });
+  const t1e = match.entries.filter(e=>e.team===1);
+  const t2e = match.entries.filter(e=>e.team===2);
+  document.getElementById('t1-rows').innerHTML = teamRows(t1e.map(toPlayer), 1);
+  document.getElementById('t2-rows').innerHTML = teamRows(t2e.map(toPlayer), 2);
+
+  // Restore awards
+  [[t1e,'t1-rows'],[t2e,'t2-rows']].forEach(([entries,id])=>{
+    document.querySelectorAll(`#${id} tr`).forEach((row,i)=>{
+      if(entries[i]?.award){
+        const sel=row.querySelector('.as');
+        if(sel) sel.value=entries[i].award;
+      }
+    });
+  });
+  updateAwardOptions();
+
+  document.getElementById('player-warn').style.display='none';
+  window.scrollTo(0,0);
+  toast('Editing match — change any values then click Save Match');
 }
 
 // ── History ────────────────────────────────────────────────────────────────
@@ -784,6 +899,7 @@ function matchCard(m){
           <span style="color:var(--muted);font-size:.75rem;margin:0 .3rem">vs</span>
           <span class="${t2w?'sw':'sl'}">${m.team2.score} ${esc(m.team2.name)}</span>
         </div>
+        <button class="btn btn-outline btn-sm" onclick="editMatch('${m.id}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="delMatch('${m.id}')">Delete</button>
       </div>
     </div>
