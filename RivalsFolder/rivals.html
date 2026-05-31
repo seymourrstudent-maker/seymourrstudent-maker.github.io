@@ -702,6 +702,77 @@ function cropCell(img, yCenterNorm, colName, sx, sy, dx=0, dy=0, highlighted=fal
   return c;
 }
 
+// ── Role inference ─────────────────────────────────────────────────────────
+// Applied to a full 6-player team after all stats are read.
+// Rules (applied in order, each identified player is removed from the pool):
+//   1. Highest healer           → Strategist  (definitive)
+//   2. Highest damage blocked   → Vanguard     (definitive)
+//   3. Position 1 (index 0)     → Vanguard     (if still unidentified)
+//   4. Position 6 (index n-1)   → Strategist   (if still unidentified)
+//   5. 2nd highest healer       → Strategist   (if still unidentified)
+//   5b. heal > 10k AND dmg > blk → Strategist  (if still unidentified)
+//   6. dmg < blk − 9 000       → Vanguard     (if still unidentified)
+//   6b. Player 2 has 1st or 2nd highest blk on team → Vanguard (last resort)
+//   No caps on role counts — 3S, 3D, 3V compositions are all valid
+//   7. Everything else          → Duelist
+function inferRoles(players){
+  const n = players.length;
+  if(!n) return;
+  const roles    = new Array(n).fill(null);
+  const pool     = new Set(players.map((_,i)=>i));
+  const count    = r => roles.filter(x=>x===r).length;
+  const bestIdx  = fn => { let bv=-Infinity,bi=-1; for(const i of pool){ const v=fn(players[i]); if(v>bv){bv=v;bi=i;} } return bi; };
+  const assign   = (i,r) => { if(pool.has(i)){ roles[i]=r; pool.delete(i); } };
+  // Pre-compute second highest healing on this team
+  const healsSorted      = players.map(p=>p.heal).sort((a,b)=>b-a);
+  const secondHighestHeal = healsSorted[1] ?? 0;
+  // Strategist guard: heal must be > 0 AND within 9k of the team's second highest healer
+  const assignS = (i) => {
+    if(i < 0 || !pool.has(i)) return;
+    const h = players[i].heal;
+    if(h <= 0) return;                              // zero healing → not a Strategist
+    if(h < secondHighestHeal - 9000) return;        // too far below 2nd healer → not a Strategist
+    assign(i, 'S');
+  };
+
+  // 1. Highest healer → S
+  assignS(bestIdx(p=>p.heal));
+
+  // 2. Highest blocker → V
+  assign(bestIdx(p=>p.blk), 'V');
+
+  // 3. Position 1 (top of scoreboard) → V
+  assign(0, 'V');
+
+  // 4. Position 6 (bottom) → S
+  assignS(n-1);
+
+  // 5. 2nd highest healer → S
+  assignS(bestIdx(p=>p.heal));
+
+  // 5b. heal > 10 000 AND dmg > blk → S (offensive support)
+  for(const i of [...pool]){
+    if(players[i].heal > 10000 && players[i].dmg > players[i].blk) assignS(i);
+  }
+
+  // 6. dmg < blk − 9 000 → V
+  for(const i of [...pool]){
+    if(players[i].dmg < players[i].blk - 9000) assign(i,'V');
+  }
+
+  // 6b. Player 2 (index 1) has 1st or 2nd highest damage blocked on team → V
+  if(pool.has(1)){
+    const blksSorted = players.map(p=>p.blk).sort((a,b)=>b-a);
+    if(players[1].blk >= blksSorted[1]) assign(1,'V');
+  }
+
+  // 7. Everything else → D
+  for(const i of [...pool]) assign(i,'D');
+
+  players.forEach((p,i)=>{ p.role = roles[i] ?? 'D'; });
+  console.log('[Roles]', players.map(p=>`${p.name.slice(0,8)}=${p.role}`).join(' '));
+}
+
 // ── OCR Pipeline ───────────────────────────────────────────────────────────
 async function processFile(file){
   const url = URL.createObjectURL(file);
@@ -774,7 +845,7 @@ async function processFile(file){
       const k = await num('k'), d = await num('d'), a = await num('a');
       const fh = await num('fh'), dmg = await num('dmg'), blk = await num('blk');
       const heal = await num('heal'), acc = await num('acc');
-      const role = detectRole(img, yNorm, sx, sy, label, dx, dy);
+      const role = 'D'; // placeholder — inferRoles() assigns final roles after full team is read
       done++; setMsg();
       return { name, role, k, d, a, fh, dmg, blk, heal, acc };
     };
@@ -795,7 +866,9 @@ async function processFile(file){
     const topPlayers = [], bottomPlayers = [];
     // checkHighlight=true for top rows only — user is always on the blue (top) team
     for(let i=0; i<LAYOUT.victoryRows.length; i++) topPlayers.push(await readRow(LAYOUT.victoryRows[i], `top-${i+1}`, true));
+    inferRoles(topPlayers);
     for(let i=0; i<LAYOUT.defeatRows.length; i++)  bottomPlayers.push(await readRow(LAYOUT.defeatRows[i],  `bot-${i+1}`, false));
+    inferRoles(bottomPlayers);
 
     // Top rows = winner if VICTORY screen, loser if DEFEAT screen
     const t1Players = isVictory ? topPlayers : bottomPlayers;
