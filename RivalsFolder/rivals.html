@@ -460,7 +460,6 @@ function resetUpload(){
 const SRC_W = 2560, SRC_H = 1440;
 const LAYOUT = {
   cols: {
-    role: [200,  290],
     name: [550,  790],
     k:    [825,  900],
     d:    [902,  977],
@@ -478,44 +477,6 @@ const LAYOUT = {
 };
 
 // ── Role detection ─────────────────────────────────────────────────────────
-// Samples only saturated pixels in the role icon crop, ignoring the team-colored
-// row background. Role icon colors are role-specific and consistent:
-//   Vanguard (crossed fists) = blue, Duelist (one fist) = red/orange, Strategist (open palm) = green.
-function detectRole(img, yNorm, sx, sy, label='?', dx=0, dy=0){
-  const [x0n, x1n] = LAYOUT.cols.role;
-  const rh = Math.round(LAYOUT.rowHalf * 0.6);
-  const x0 = Math.round((x0n + dx) * sx), x1 = Math.round((x1n + dx) * sx);
-  const ry = yNorm + dy + (LAYOUT.roleYOffset || 0);
-  const y0 = Math.round((ry - rh) * sy), y1 = Math.round((ry + rh) * sy);
-  const w = Math.max(x1-x0, 1), h = Math.max(y1-y0, 1);
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  c.getContext('2d').drawImage(img, x0, y0, w, h, 0, 0, w, h);
-  const d = c.getContext('2d').getImageData(0, 0, w, h).data;
-
-  // Only average pixels with meaningful saturation — filters out team background tint
-  let rS=0, gS=0, bS=0, n=0;
-  for(let i=0; i<d.length; i+=4){
-    const r=d[i], g=d[i+1], b=d[i+2];
-    const max=Math.max(r,g,b), min=Math.min(r,g,b);
-    const sat = max > 0 ? (max-min)/max : 0;
-    if(sat > 0.12 && max > 40 && max < 248){ rS+=r; gS+=g; bS+=b; n++; }
-  }
-
-  if(n < 8){ console.log(`[Role ${label}] too few saturated px → D`); return 'D'; }
-
-  const r=rS/n, g=gS/n, b=bS/n;
-  const max=Math.max(r,g,b), min=Math.min(r,g,b), delta=max-min;
-  let hue;
-  if(max===r)      hue = 60*(((g-b)/delta)%6);
-  else if(max===g) hue = 60*((b-r)/delta+2);
-  else             hue = 60*((r-g)/delta+4);
-  if(hue < 0) hue += 360;
-
-  const role = (hue >= 75 && hue <= 165) ? 'S' : (hue >= 165 && hue <= 265) ? 'V' : 'D';
-  console.log(`[Role ${label}] hue=${hue.toFixed(1)} rgb=(${r.toFixed(0)},${g.toFixed(0)},${b.toFixed(0)}) n=${n} → ${role}`);
-  return role;
-}
 
 // Default position of "Ban & Pick" text center in 2560×1440 space,
 // calibrated from the reference screenshot. All column/row coordinates
