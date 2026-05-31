@@ -69,7 +69,7 @@
     input::placeholder{color:var(--muted)}
     label{font-size:0.63rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px}
     .field{display:flex;flex-direction:column;gap:4px}
-    .meta-grid{display:grid;grid-template-columns:80px 1fr 1fr;gap:0.65rem;margin-bottom:1rem}
+    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-bottom:1rem}
     .meta-grid .span2{grid-column:span 2}
 
     /* team header row */
@@ -164,6 +164,16 @@
     #toast.ok{border-color:var(--accent);color:var(--accent)}
     #toast.err{border-color:#f66;color:#f66}
 
+    /* duplicate modal */
+    #dup-modal{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9998;display:none;align-items:center;justify-content:center}
+    .dup-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.75rem;max-width:460px;width:90%}
+    .dup-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:var(--accent3);margin-bottom:0.75rem}
+    .dup-sub{font-size:0.75rem;color:var(--muted);margin-bottom:1rem}
+    .dup-names{display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:1rem 0;flex-wrap:wrap}
+    .dup-pill{font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;padding:0.35rem 0.7rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px}
+    .dup-choice{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:1.25rem}
+    .dup-footer{display:flex;justify-content:flex-end;margin-top:0.75rem}
+
     /* login overlay */
     #login-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:center;justify-content:center}
     .login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:380px;text-align:center}
@@ -211,6 +221,27 @@
     </div>
   </div>
 
+  <!-- Duplicate player modal -->
+  <div id="dup-modal">
+    <div class="dup-card">
+      <div class="dup-title">⚠ Possible Duplicate Player</div>
+      <div class="dup-sub">These two names share 6+ matching characters — they may be the same person:</div>
+      <div class="dup-names">
+        <span class="dup-pill" id="dup-name-a"></span>
+        <span style="color:var(--muted);font-size:0.7rem">vs</span>
+        <span class="dup-pill" id="dup-name-b"></span>
+      </div>
+      <div class="dup-sub">Which name should be kept? The other's stats will be merged in.</div>
+      <div class="dup-choice">
+        <button class="btn btn-outline" style="flex:1" onclick="confirmDup(true)">Keep "<span id="dup-label-a"></span>"</button>
+        <button class="btn btn-outline" style="flex:1" onclick="confirmDup(false)">Keep "<span id="dup-label-b"></span>"</button>
+      </div>
+      <div class="dup-footer">
+        <button class="btn btn-outline btn-sm" onclick="dismissDup()">Not a duplicate</button>
+      </div>
+    </div>
+  </div>
+
   <nav>
     <a class="nav-logo" href="../HomeFolder/index.html">Rapheal Seymour</a>
     <ul class="nav-links">
@@ -236,7 +267,6 @@
         <div class="head-stats">
           <div class="h-stat"><div class="val" id="hs-m">0</div><div class="lbl">Matches</div></div>
           <div class="h-stat"><div class="val" id="hs-p">0</div><div class="lbl">Players</div></div>
-          <div class="h-stat"><div class="val" id="hs-d">0</div><div class="lbl">Days</div></div>
         </div>
         <button id="role-indicator" onclick="switchRole()">Viewer</button>
       </div>
@@ -261,6 +291,9 @@
           <div class="dz-sub">or <span class="dz-browse">click to browse</span></div>
         </div>
         <input type="file" id="file-in" accept=".png,.jpg,.jpeg" hidden />
+        <div style="text-align:center;margin-top:1rem">
+          <button class="btn btn-outline" onclick="openManualInput()">✏ Manual Input</button>
+        </div>
       </div>
 
       <!-- State 2: Processing -->
@@ -277,7 +310,7 @@
         <div class="review-wrap">
 
           <!-- Left: screenshot -->
-          <div class="ss-pane">
+          <div class="ss-pane" id="ss-pane">
             <div style="position:relative;line-height:0">
               <img id="ss-img" alt="Match screenshot" style="display:block;width:100%" />
               <canvas id="calib-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none"></canvas>
@@ -289,10 +322,9 @@
           </div>
 
           <!-- Right: editable form -->
-          <div>
+          <div id="form-content">
             <!-- Match meta -->
             <div class="meta-grid">
-              <div class="field"><label>Day #</label><input id="f-day" type="number" min="1" value="1" /></div>
               <div class="field"><label>Date</label><input id="f-date" type="date" /></div>
               <div class="field"><label>Game Mode</label>
                 <select id="f-mode" onchange="updateMapList()">
@@ -352,6 +384,9 @@
 
     <!-- ══ Tab: Leaderboard ══ -->
     <div id="tab-lb" class="tab-panel">
+      <div id="dup-check-bar" style="display:none;justify-content:flex-end;margin-bottom:1rem">
+        <button class="btn btn-outline btn-sm" onclick="checkDuplicates()">🔍 Check for Duplicate Players</button>
+      </div>
       <div class="card" style="overflow:hidden">
         <div class="lb-wrap">
           <table class="lb-table">
@@ -402,7 +437,6 @@ function updateStats(){
   const names=new Set(); m.forEach(x=>x.entries.forEach(e=>names.add(e.player_name.toLowerCase())));
   document.getElementById('hs-m').textContent=m.length;
   document.getElementById('hs-p').textContent=names.size;
-  document.getElementById('hs-d').textContent=new Set(m.map(x=>x.day)).size;
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
@@ -438,6 +472,21 @@ fileIn.addEventListener('change', ()=>{
   processFile(f);
 });
 
+function openManualInput(){
+  document.getElementById('st-upload').style.display='none';
+  document.getElementById('st-proc').style.display='none';
+  document.getElementById('st-review').style.display='';
+  document.getElementById('ss-pane').style.display='none';
+  document.getElementById('ss-img').src='';
+  const fc = document.getElementById('form-content');
+  fc.style.maxWidth='860px';
+  fc.style.margin='0 auto';
+  fc.style.width='100%';
+  populateForm({ t1Players:[], t2Players:[] });
+  if(!document.getElementById('f-date').value)
+    document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+}
+
 function resetUpload(){
   document.getElementById('st-upload').style.display='';
   document.getElementById('st-proc').style.display='none';
@@ -450,6 +499,9 @@ function resetUpload(){
   b1.className='tb win';  b1.textContent='VICTORY';
   b2.className='tb loss'; b2.textContent='DEFEAT';
   editingMatchId=null;
+  document.getElementById('ss-pane').style.display='';
+  const fc = document.getElementById('form-content');
+  fc.style.maxWidth=''; fc.style.margin=''; fc.style.width='';
   fileIn.value='';
 }
 
@@ -918,7 +970,7 @@ function readRows(tbodyId, team, result){
 }
 
 function saveMatch(){
-  const day   = parseInt(document.getElementById('f-day').value)||1;
+  const day   = 1;
   const date  = document.getElementById('f-date').value;
   const mode  = document.getElementById('f-mode').value;
   const map   = document.getElementById('f-map').value;
@@ -977,6 +1029,8 @@ function saveMatch(){
   saveMatches(all);
   updateStats();
   resetUpload();
+  showTab('lb');
+  checkDuplicates();
 }
 
 // ── Edit Match ─────────────────────────────────────────────────────────────
@@ -994,7 +1048,6 @@ function editMatch(id){
   document.getElementById('ss-img').src='';
 
   // Meta fields
-  document.getElementById('f-day').value  = match.day  || 1;
   document.getElementById('f-date').value = match.date || '';
   document.getElementById('f-mode').value = match.mode || '';
   updateMapList();
@@ -1321,6 +1374,84 @@ document.addEventListener('input', e=>{
   if(!isNaN(raw) && raw < 0)   e.target.value = '0';
 });
 
+// ── Duplicate Detection ────────────────────────────────────────────────────
+let dupQueue   = [];
+let currentDup = null;
+
+function findDuplicates(stats){
+  const pairs = [];
+  for(let i=0; i<stats.length; i++){
+    for(let j=i+1; j<stats.length; j++){
+      const a = stats[i].name.toLowerCase().trim();
+      const b = stats[j].name.toLowerCase().trim();
+      if(a.length < 6 || b.length < 6) continue;
+      // Count matching leading characters
+      let common = 0;
+      while(common < a.length && common < b.length && a[common] === b[common]) common++;
+      if(common >= 6) pairs.push({ a: stats[i].name, b: stats[j].name });
+    }
+  }
+  return pairs;
+}
+
+function highlightDupNames(flaggedSet){
+  document.querySelectorAll('#lb-body .lb-pname').forEach(el => {
+    const n = el.textContent.trim().toLowerCase();
+    el.style.color = flaggedSet.has(n) ? '#f66' : '';
+  });
+}
+
+function checkDuplicates(){
+  if(!isStaffRole()) return;
+  const stats = computeStats();
+  const pairs = findDuplicates(stats);
+  // Highlight flagged names in leaderboard
+  const flagged = new Set(pairs.flatMap(p=>[p.a.toLowerCase(),p.b.toLowerCase()]));
+  highlightDupNames(flagged);
+  if(!pairs.length){ toast('No duplicate players detected'); return; }
+  dupQueue = [...pairs];
+  processNextDup();
+}
+
+function processNextDup(){
+  if(!dupQueue.length){
+    document.getElementById('dup-modal').style.display='none';
+    // Clear highlights after queue exhausted
+    highlightDupNames(new Set());
+    return;
+  }
+  currentDup = dupQueue[0];
+  document.getElementById('dup-name-a').textContent  = currentDup.a;
+  document.getElementById('dup-name-b').textContent  = currentDup.b;
+  document.getElementById('dup-label-a').textContent = currentDup.a;
+  document.getElementById('dup-label-b').textContent = currentDup.b;
+  document.getElementById('dup-modal').style.display = 'flex';
+}
+
+function confirmDup(keepA){
+  if(!currentDup) return;
+  const keepName   = keepA ? currentDup.a : currentDup.b;
+  const removeName = keepA ? currentDup.b : currentDup.a;
+  // Rename all entries of removeName to keepName across every match
+  const all = getMatches();
+  all.forEach(m => m.entries.forEach(e => {
+    if(e.player_name.toLowerCase().trim() === removeName.toLowerCase().trim())
+      e.player_name = keepName;
+  }));
+  saveMatches(all);
+  updateStats();
+  toast(`Merged "${removeName}" → "${keepName}"`);
+  // Re-scan after merge in case new pairs surface
+  dupQueue = findDuplicates(computeStats());
+  if(document.getElementById('tab-lb').classList.contains('active')) renderLB();
+  processNextDup();
+}
+
+function dismissDup(){
+  dupQueue.shift();
+  processNextDup();
+}
+
 // ── Auth ───────────────────────────────────────────────────────────────────
 const STAFF_PIN = '1234'; // change this to your preferred PIN
 
@@ -1336,6 +1467,8 @@ function applyRole(role){
   ind.textContent = isStaff ? 'Staff ↩' : 'Viewer ↩';
   ind.style.color = isStaff ? 'var(--accent)' : '';
   ind.style.borderColor = isStaff ? 'var(--accent)' : '';
+  // Show/hide duplicate check button
+  document.getElementById('dup-check-bar').style.display = isStaff ? 'flex' : 'none';
   // Default to History for viewers
   if(!isStaff) showTab('history');
 }
