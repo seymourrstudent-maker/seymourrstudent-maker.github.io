@@ -640,8 +640,12 @@ function cropCell(img, yCenterNorm, colName, sx, sy, dx=0, dy=0, highlighted=fal
   for(let i = 0; i < d.length; i += 4){
     let v;
     if(highlighted){
-      const maxCh = Math.max(d[i], d[i+1], d[i+2]);
-      v = isDark ? (maxCh > 100 ? 0 : 255) : (maxCh < 200 ? 0 : 255);
+      // Orange/teal text is highly saturated; golden background glow is not.
+      // Only vivid, bright pixels (sat>0.45, brightness>0.25) become black text.
+      const rf=d[i]/255, gf=d[i+1]/255, bf=d[i+2]/255;
+      const maxF=Math.max(rf,gf,bf), minF=Math.min(rf,gf,bf);
+      const sat = maxF > 0 ? (maxF-minF)/maxF : 0;
+      v = (sat > 0.45 && maxF > 0.25) ? 0 : 255;
     } else {
       const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
       v = isDark ? (g > 140 ? 0 : 255) : (g < 140 ? 0 : 255);
