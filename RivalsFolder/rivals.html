@@ -414,20 +414,21 @@ function resetUpload(){
 const SRC_W = 2560, SRC_H = 1440;
 const LAYOUT = {
   cols: {
-    role: [220,  310],
+    role: [200,  290],
     name: [550,  790],
-    k:    [860,  935],
-    d:    [937,  1012],
-    a:    [1014, 1089],
-    fh:   [1520, 1637],
-    dmg:  [1685, 1815],
-    blk:  [1865, 1990],
-    heal: [2035, 2150],
-    acc:  [2210, 2320],
+    k:    [825,  900],
+    d:    [902,  977],
+    a:    [979,  1054],
+    fh:   [1517, 1634],
+    dmg:  [1682, 1812],
+    blk:  [1862, 1987],
+    heal: [2032, 2147],
+    acc:  [2207, 2317],
   },
-  victoryRows: [362, 425, 488, 551, 614, 677],
-  defeatRows:  [762, 825, 888, 951, 1014, 1077],
-  rowHalf: 30,
+  victoryRows: [370, 433, 496, 559, 622, 685],
+  defeatRows:  [770, 833, 896, 959, 1022, 1085],
+  rowHalf:    30,
+  roleYOffset: 8,
 };
 
 // ── Role detection ─────────────────────────────────────────────────────────
@@ -438,7 +439,8 @@ function detectRole(img, yNorm, sx, sy, label='?', dx=0, dy=0){
   const [x0n, x1n] = LAYOUT.cols.role;
   const rh = Math.round(LAYOUT.rowHalf * 0.6);
   const x0 = Math.round((x0n + dx) * sx), x1 = Math.round((x1n + dx) * sx);
-  const y0 = Math.round((yNorm + dy - rh) * sy), y1 = Math.round((yNorm + dy + rh) * sy);
+  const ry = yNorm + dy + (LAYOUT.roleYOffset || 0);
+  const y0 = Math.round((ry - rh) * sy), y1 = Math.round((ry + rh) * sy);
   const w = Math.max(x1-x0, 1), h = Math.max(y1-y0, 1);
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
@@ -475,47 +477,131 @@ function detectRole(img, yNorm, sx, sy, label='?', dx=0, dy=0){
 const DEFAULT_ANCHOR = { x: 1281, y: 229 };
 
 // ── Anchor detection ───────────────────────────────────────────────────────
-// Finds "Ban & Pick" text in the upper strip of the screenshot using sparse OCR.
-// Returns {dx, dy} — how far the text is from DEFAULT_ANCHOR in 2560-space.
-// If not found returns {dx:0, dy:0} so the default LAYOUT coordinates are used.
+// Anchor detection uses "Ban & Pick" and "Player Name" as reference points.
+// Both are reliably OCR'd. Their implied dx/dy are averaged weighted by confidence.
+const MIN_CONF        = 40;
+const PLAYER_NAME_REF = { x: 620, y: 322 };
+
 async function findAnchor(img, sx, sy, worker){
-  const stripH = Math.round(img.naturalHeight * 0.23);
+  const stripH = Math.round(img.naturalHeight * 0.35); // expanded from 23%
   const SCALE  = 2;
   const c = document.createElement('canvas');
   c.width  = img.naturalWidth  * SCALE;
   c.height = stripH * SCALE;
-  c.getContext('2d').drawImage(img, 0, 0, img.naturalWidth, stripH, 0, 0, c.width, c.height);
+  const ctx0 = c.getContext('2d');
+  ctx0.drawImage(img, 0, 0, img.naturalWidth, stripH, 0, 0, c.width, c.height);
+  // Threshold: game UI text is white-on-dark — convert to black-on-white for Tesseract
+  const sid = ctx0.getImageData(0, 0, c.width, c.height);
+  const sd  = sid.data;
+  for(let i=0; i<sd.length; i+=4){
+    const g = Math.round(0.299*sd[i] + 0.587*sd[i+1] + 0.114*sd[i+2]);
+    const v = g > 140 ? 0 : 255; // bright text → black; dark bg → white
+    sd[i]=sd[i+1]=sd[i+2]=v; sd[i+3]=255;
+  }
+  ctx0.putImageData(sid, 0, 0);
 
   try {
-    await worker.setParameters({ tessedit_pageseg_mode: '11' }); // sparse text
+    await worker.setParameters({ tessedit_pageseg_mode: '11' });
     const { data } = await worker.recognize(c);
-    await worker.setParameters({ tessedit_pageseg_mode: '7' });  // restore
+    await worker.setParameters({ tessedit_pageseg_mode: '7' });
 
-    const words = data.words || [];
-    const banWord  = words.find(w => /^ban$/i.test(w.text.trim()));
-    const pickWord = words.find(w => /^pick$/i.test(w.text.trim()));
+    // Only trust words above the confidence threshold
+    const words = (data.words || []).filter(w => w.confidence >= MIN_CONF);
 
-    if(banWord && pickWord){
-      // Bounding boxes are in upscaled canvas space — divide by SCALE for image pixels
-      const imgX = ((banWord.bbox.x0+banWord.bbox.x1+pickWord.bbox.x0+pickWord.bbox.x1)/4) / SCALE;
-      const imgY = ((banWord.bbox.y0+banWord.bbox.y1)/2) / SCALE;
-      // Convert image pixels → 2560-space
-      const ax = imgX / sx, ay = imgY / sy;
-      const dx = ax - DEFAULT_ANCHOR.x, dy = ay - DEFAULT_ANCHOR.y;
-      console.log(`[Anchor] Ban&Pick at (${ax.toFixed(0)},${ay.toFixed(0)}) offset=(${dx.toFixed(0)},${dy.toFixed(0)})`);
-      lastAnchorPos = { ax, ay };
+    // Helper: average bounding-box center of a list of words, in 2560-space
+    const wordCenter = (ws) => {
+      const sumX = ws.reduce((s,w) => s + (w.bbox.x0+w.bbox.x1)/2, 0) / ws.length / SCALE;
+      const sumY = ws.reduce((s,w) => s + (w.bbox.y0+w.bbox.y1)/2, 0) / ws.length / SCALE;
+      return { ax: sumX / sx, ay: sumY / sy };
+    };
+    const avgConf = (ws) => ws.reduce((s,w) => s + w.confidence, 0) / ws.length;
+
+    const detections = [];
+
+    // Anchor 1 — "Ban & Pick"
+    const banW  = words.find(w => /ban/i.test(w.text.trim()));
+    const pickW = words.find(w => /pick/i.test(w.text.trim()));
+    if(banW && pickW){
+      const { ax, ay } = wordCenter([banW, pickW]);
+      const conf = avgConf([banW, pickW]);
+      detections.push({ name:'Ban&Pick', dx: ax-DEFAULT_ANCHOR.x, dy: ay-DEFAULT_ANCHOR.y, conf });
+    }
+
+    // Anchor 2 — "Player Name" header
+    const playerW = words.find(w => /player/i.test(w.text.trim()));
+    const nameW   = words.find(w => /^name/i.test(w.text.trim()));
+    if(playerW && nameW){
+      const yDiff = Math.abs((playerW.bbox.y0+playerW.bbox.y1)/2 - (nameW.bbox.y0+nameW.bbox.y1)/2) / SCALE;
+      if(yDiff < 40){
+        const { ax, ay } = wordCenter([playerW, nameW]);
+        const conf = avgConf([playerW, nameW]);
+        detections.push({ name:'PlayerName', dx: ax-PLAYER_NAME_REF.x, dy: ay-PLAYER_NAME_REF.y, conf });
+      }
+    }
+
+
+    if(detections.length > 0){
+      // Weighted average by confidence
+      const totalConf = detections.reduce((s,d) => s + d.conf, 0);
+      const dx = detections.reduce((s,d) => s + d.dx * d.conf, 0) / totalConf;
+      const dy = detections.reduce((s,d) => s + d.dy * d.conf, 0) / totalConf;
+      const summary = detections.map(d=>`${d.name}(${d.conf.toFixed(0)}%)`).join('+');
+      console.log(`[Anchor] ${summary} → offset=(${dx.toFixed(1)},${dy.toFixed(1)})`);
+
+      // Store per-anchor positions for overlay crosses
+      const ANCHOR_COLORS = {
+        'Ban&Pick':   'rgba(255,220,0,0.95)',
+        'PlayerName': 'rgba(0,220,255,0.95)',
+      };
+      const REF = {
+        'Ban&Pick':   DEFAULT_ANCHOR,
+        'PlayerName': PLAYER_NAME_REF,
+      };
+      lastAnchors = detections.map(d => ({
+        name:  d.name,
+        ax:    (REF[d.name] || DEFAULT_ANCHOR).x + d.dx,
+        ay:    (REF[d.name] || DEFAULT_ANCHOR).y + d.dy,
+        color: ANCHOR_COLORS[d.name] || 'rgba(255,255,255,0.8)',
+      }));
       lastOffset = { dx, dy };
       return { dx, dy };
     }
+
   } catch(e){
     console.warn('[Anchor] search failed:', e);
     try { await worker.setParameters({ tessedit_pageseg_mode: '7' }); } catch(_){}
   }
 
-  console.log('[Anchor] Ban&Pick not found — using default coordinates');
-  lastAnchorPos = null;
+  console.log('[Anchor] No anchors found — using default coordinates');
+  lastAnchors = [];
   lastOffset = { dx: 0, dy: 0 };
   return { dx: 0, dy: 0 };
+}
+
+// ── Highlighted row detection ──────────────────────────────────────────────
+// The local player's row has colored text (teal/orange) instead of plain white.
+// Detect by measuring average saturation of the name cell — highlighted rows are
+// significantly more colorful than normal rows.
+function isHighlightedRow(img, yNorm, sx, sy, dx, dy){
+  const [x0n] = LAYOUT.cols.name;
+  const rh = Math.round(LAYOUT.rowHalf * 0.5);
+  const x0 = Math.round((x0n + dx) * sx);
+  const x1 = Math.round((x0n + dx + 120) * sx);
+  const y0 = Math.round((yNorm + dy - rh) * sy), y1 = Math.round((yNorm + dy + rh) * sy);
+  const w = Math.max(x1-x0, 1), h = Math.max(y1-y0, 1);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, x0, y0, w, h, 0, 0, w, h);
+  const d = c.getContext('2d').getImageData(0, 0, w, h).data;
+  let satSum = 0, n = 0;
+  for(let i=0; i<d.length; i+=4){
+    const r=d[i], g=d[i+1], b=d[i+2];
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    if(max > 50){ satSum += max > 0 ? (max-min)/max : 0; n++; }
+  }
+  const avgSat = n > 0 ? satSum/n : 0;
+  console.log(`[Highlight] yNorm=${yNorm} avgSat=${avgSat.toFixed(3)}`);
+  return avgSat > 0.08;
 }
 
 // ── Cell helpers ───────────────────────────────────────────────────────────
@@ -530,7 +616,7 @@ function loadImage(src){
 
 // Crop a single cell, upscale 3×, and threshold to black-text-on-white for Tesseract.
 // dx/dy are anchor offsets in 2560-space — shifts all boxes to match where "Ban & Pick" was found.
-function cropCell(img, yCenterNorm, colName, sx, sy, dx=0, dy=0){
+function cropCell(img, yCenterNorm, colName, sx, sy, dx=0, dy=0, highlighted=false){
   const [x0n, x1n] = LAYOUT.cols[colName];
   const rh = LAYOUT.rowHalf;
   const x0 = Math.round((x0n + dx) * sx), x1 = Math.round((x1n + dx) * sx);
@@ -548,10 +634,18 @@ function cropCell(img, yCenterNorm, colName, sx, sy, dx=0, dy=0){
   const cw = c.width, ch = c.height;
   const avgCorner = (luma(0) + luma((cw-1)*4) + luma((ch-1)*cw*4) + luma(((ch-1)*cw+cw-1)*4)) / 4;
   const isDark = avgCorner < 128;
-  // Produce black text on white background for Tesseract
+  // Produce black text on white background for Tesseract.
+  // Highlighted rows have teal/orange text — grayscale misses these, so use
+  // max-channel brightness instead which captures any vivid color as text.
   for(let i = 0; i < d.length; i += 4){
-    const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
-    const v = isDark ? (g > 140 ? 0 : 255) : (g < 140 ? 0 : 255);
+    let v;
+    if(highlighted){
+      const maxCh = Math.max(d[i], d[i+1], d[i+2]);
+      v = isDark ? (maxCh > 100 ? 0 : 255) : (maxCh < 200 ? 0 : 255);
+    } else {
+      const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+      v = isDark ? (g > 140 ? 0 : 255) : (g < 140 ? 0 : 255);
+    }
     d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
   }
   ctx.putImageData(idata, 0, 0);
@@ -618,9 +712,11 @@ async function processFile(file){
       document.getElementById('proc-msg').textContent = `Reading player ${done} of 12…`;
     };
 
-    const readRow = async (yNorm, label) => {
+    const readRow = async (yNorm, label, checkHighlight=false) => {
+      const highlighted = checkHighlight && isHighlightedRow(img, yNorm, sx, sy, dx, dy);
+      if(highlighted) console.log(`[Row ${label}] Highlighted player row — using max-channel threshold`);
       const ocr = async col => {
-        const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy, dx, dy));
+        const { data: { text } } = await worker.recognize(cropCell(img, yNorm, col, sx, sy, dx, dy, highlighted));
         return text.trim();
       };
       const name = (await ocr('name')).replace(/[^\w\s\-.']/g, '').trim();
@@ -647,8 +743,9 @@ async function processFile(file){
     }
 
     const topPlayers = [], bottomPlayers = [];
-    for(let i=0; i<LAYOUT.victoryRows.length; i++) topPlayers.push(await readRow(LAYOUT.victoryRows[i], `top-${i+1}`));
-    for(let i=0; i<LAYOUT.defeatRows.length; i++)  bottomPlayers.push(await readRow(LAYOUT.defeatRows[i],  `bot-${i+1}`));
+    // checkHighlight=true for top rows only — user is always on the blue (top) team
+    for(let i=0; i<LAYOUT.victoryRows.length; i++) topPlayers.push(await readRow(LAYOUT.victoryRows[i], `top-${i+1}`, true));
+    for(let i=0; i<LAYOUT.defeatRows.length; i++)  bottomPlayers.push(await readRow(LAYOUT.defeatRows[i],  `bot-${i+1}`, false));
 
     // Top rows = winner if VICTORY screen, loser if DEFEAT screen
     const t1Players = isVictory ? topPlayers : bottomPlayers;
@@ -1049,9 +1146,9 @@ function updateMapList(){
     (MAP_DATA[mode]||[]).map(m=>`<option value="${m}">${m}</option>`).join('');
 }
 
-// Last anchor found by findAnchor — stored so drawCalibBoxes can visualise it.
-let lastAnchorPos = null;   // { ax, ay } in 2560-space
-let lastOffset    = { dx: 0, dy: 0 };
+// Per-anchor detections stored for the overlay — each entry: { name, ax, ay, color }
+let lastAnchors = [];
+let lastOffset  = { dx: 0, dy: 0 };
 
 // ── Calibration Overlay ────────────────────────────────────────────────────
 let calibVisible = false;
@@ -1096,14 +1193,13 @@ function drawCalibBoxes(){
     ctx.fillText(label, cx + s + 3, cy + 4);
   };
 
-  // White cross = where the default anchor expects "Ban & Pick"
-  cross(DEFAULT_ANCHOR.x, DEFAULT_ANCHOR.y, 'rgba(255,255,255,0.8)', 'DEFAULT ANCHOR');
+  // White cross = default expected position of "Ban & Pick"
+  cross(DEFAULT_ANCHOR.x, DEFAULT_ANCHOR.y, 'rgba(255,255,255,0.8)', 'DEFAULT');
 
-  // Yellow cross = where "Ban & Pick" was actually detected in this screenshot
-  if(lastAnchorPos){
-    const sign = v => v >= 0 ? `+${v.toFixed(0)}` : v.toFixed(0);
-    cross(lastAnchorPos.ax, lastAnchorPos.ay, 'rgba(255,220,0,0.95)',
-          `ANCHOR (dx${sign(dx)}, dy${sign(dy)})`);
+  // Colored cross for each detected anchor
+  const sign = v => v >= 0 ? `+${v.toFixed(0)}` : v.toFixed(0);
+  for(const a of lastAnchors){
+    cross(a.ax, a.ay, a.color, `${a.name} (dx${sign(dx)},dy${sign(dy)})`);
   }
 }
 
